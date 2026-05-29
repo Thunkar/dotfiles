@@ -5,17 +5,17 @@
     box-shadow: none;
     font-family: "JetBrainsMono Nerd Font", "Noto Sans", monospace;
     font-size: 16px;
-    color: #cdd6f4;
+    color: #@TEXT@;
 }
 
 window {
-    background-color: rgba(17, 17, 27, 0.85);
+    background-color: rgba(@CRUST_R@, @CRUST_G@, @CRUST_B@, 0.85);
 }
 
 button {
-    color: #cdd6f4;
-    background-color: rgba(30, 30, 46, 0.85);
-    border: 2px solid rgba(203, 166, 247, 0.30);
+    color: #@TEXT@;
+    background-color: rgba(@BASE_R@, @BASE_G@, @BASE_B@, 0.85);
+    border: 2px solid rgba(@MAUVE_R@, @MAUVE_G@, @MAUVE_B@, 0.30);
     border-radius: 18px;
     margin: 12px;
     background-repeat: no-repeat;
@@ -27,8 +27,8 @@ button {
 button:focus,
 button:active,
 button:hover {
-    background-color: rgba(203, 166, 247, 0.18);
-    border-color: #cba6f7;
+    background-color: rgba(@MAUVE_R@, @MAUVE_G@, @MAUVE_B@, 0.18);
+    border-color: #@MAUVE@;
     color: #ffffff;
     outline-style: none;
 }

@@ -12,7 +12,7 @@
 
 window#waybar {
     background-color: transparent;
-    color: #cdd6f4;
+    color: #@TEXT@;
 }
 
 /* The three module-row containers stay transparent — only the pills show. */
@@ -36,12 +36,12 @@ window#waybar {
 #custom-caffeine,
 #custom-claude-usage,
 #custom-power {
-    background-color: rgba(30, 30, 46, 0.78);
-    border: 1px solid rgba(203, 166, 247, 0.16);
+    background-color: rgba(@BASE_R@, @BASE_G@, @BASE_B@, 0.78);
+    border: 1px solid rgba(@MAUVE_R@, @MAUVE_G@, @MAUVE_B@, 0.16);
     border-radius: 999px;
     padding: 0 12px;
     margin: 3px 3px;
-    color: #cdd6f4;
+    color: #@TEXT@;
     transition: background-color 150ms ease, color 150ms ease;
 }
 
@@ -53,26 +53,26 @@ window#waybar {
 #workspaces button {
     padding: 0 8px;
     margin: 2px 1px;
-    color: #6c7086;
+    color: #@OVERLAY0@;
     background: transparent;
     border-radius: 999px;
     transition: all 150ms ease;
 }
 
 #workspaces button:hover {
-    color: #cdd6f4;
-    background: rgba(203, 166, 247, 0.18);
+    color: #@TEXT@;
+    background: rgba(@MAUVE_R@, @MAUVE_G@, @MAUVE_B@, 0.18);
 }
 
 #workspaces button.active {
-    color: #11111b;
-    background-color: #cba6f7;
-    box-shadow: 0 0 6px rgba(203, 166, 247, 0.55);
+    color: #@CRUST@;
+    background-color: #@MAUVE@;
+    box-shadow: 0 0 6px rgba(@MAUVE_R@, @MAUVE_G@, @MAUVE_B@, 0.55);
 }
 
 #workspaces button.urgent {
-    color: #11111b;
-    background-color: #f38ba8;
+    color: #@CRUST@;
+    background-color: #@RED@;
 }
 
 /* ── wlr/taskbar (open apps in centre, one icon per window) ────── */
@@ -82,8 +82,8 @@ window#waybar {
  * only shows the windows on workspaces assigned to that monitor —
  * matching the odd/even-monitor split in hypr/conf.d/10-monitors.conf. */
 #taskbar {
-    background-color: rgba(30, 30, 46, 0.78);
-    border: 1px solid rgba(203, 166, 247, 0.16);
+    background-color: rgba(@BASE_R@, @BASE_G@, @BASE_B@, 0.78);
+    border: 1px solid rgba(@MAUVE_R@, @MAUVE_G@, @MAUVE_B@, 0.16);
     border-radius: 999px;
     padding: 0 6px;
     margin: 3px 3px;
@@ -97,22 +97,22 @@ window#waybar {
     transition: background 150ms ease;
 }
 #taskbar button:hover {
-    background: rgba(203, 166, 247, 0.20);
+    background: rgba(@MAUVE_R@, @MAUVE_G@, @MAUVE_B@, 0.20);
 }
 #taskbar button.active {
-    background: rgba(203, 166, 247, 0.30);
+    background: rgba(@MAUVE_R@, @MAUVE_G@, @MAUVE_B@, 0.30);
 }
 
 /* ── Submap indicator (RESIZE / LAYOUTS) ───────────────────────── */
 #submap {
-    color: #f9e2af;
-    background-color: rgba(249, 226, 175, 0.14);
-    border-color: rgba(249, 226, 175, 0.30);
+    color: #@YELLOW@;
+    background-color: rgba(@YELLOW_R@, @YELLOW_G@, @YELLOW_B@, 0.14);
+    border-color: rgba(@YELLOW_R@, @YELLOW_G@, @YELLOW_B@, 0.30);
 }
 
 /* ── Focused window title ──────────────────────────────────────── */
 #window {
-    color: #bac2de;
+    color: #@SUBTEXT1@;
     font-style: italic;
 }
 
@@ -123,67 +123,67 @@ window#waybar.empty #window {
 
 /* ── Right-cluster accent colors ───────────────────────────────── */
 #clock {
-    color: #b4befe;
+    color: #@LAVENDER@;
 }
 
 #network {
-    color: #94e2d5;
+    color: #@TEAL@;
 }
 
 #bluetooth {
-    color: #89b4fa;
+    color: #@BLUE@;
 }
 
 #bluetooth.disabled,
 #bluetooth.off {
-    color: #6c7086;
+    color: #@OVERLAY0@;
 }
 
 #pulseaudio {
-    color: #f5c2e7;
+    color: #@PINK@;
 }
 
 #pulseaudio.muted {
-    color: #6c7086;
+    color: #@OVERLAY0@;
 }
 
 #custom-mako.dnd {
-    color: #6c7086;
+    color: #@OVERLAY0@;
 }
 
 #custom-mako.on {
-    color: #a6e3a1;
+    color: #@GREEN@;
 }
 
 #custom-caffeine.on {
-    color: #f9e2af;
-    background-color: rgba(249, 226, 175, 0.18);
-    border-color: rgba(249, 226, 175, 0.40);
+    color: #@YELLOW@;
+    background-color: rgba(@YELLOW_R@, @YELLOW_G@, @YELLOW_B@, 0.18);
+    border-color: rgba(@YELLOW_R@, @YELLOW_G@, @YELLOW_B@, 0.40);
 }
 
 #custom-caffeine.off {
-    color: #6c7086;
+    color: #@OVERLAY0@;
 }
 
 #custom-claude-usage.low {
-    color: #a6e3a1;
+    color: #@GREEN@;
 }
 
 #custom-claude-usage.medium {
-    color: #f9e2af;
+    color: #@YELLOW@;
 }
 
 #custom-claude-usage.high {
-    color: #f38ba8;
+    color: #@RED@;
 }
 
 #custom-claude-usage.error {
-    color: #f38ba8;
+    color: #@RED@;
 }
 
 #tray menu {
-    background-color: rgba(30, 30, 46, 0.95);
-    color: #cdd6f4;
+    background-color: rgba(@BASE_R@, @BASE_G@, @BASE_B@, 0.95);
+    color: #@TEXT@;
     border-radius: 10px;
     padding: 6px;
 }
@@ -191,14 +191,14 @@ window#waybar.empty #window {
 /* Power keeps its red tint but matches every other pill's metrics
  * (font-size, padding) so the bar's vertical baseline stays clean. */
 #custom-power {
-    color: #f38ba8;
-    background-color: rgba(243, 139, 168, 0.14);
-    border-color: rgba(243, 139, 168, 0.32);
+    color: #@RED@;
+    background-color: rgba(@RED_R@, @RED_G@, @RED_B@, 0.14);
+    border-color: rgba(@RED_R@, @RED_G@, @RED_B@, 0.32);
 }
 
 #custom-power:hover {
-    color: #11111b;
-    background-color: #f38ba8;
+    color: #@CRUST@;
+    background-color: #@RED@;
 }
 
 /* Single-glyph pills (caffeine, mako, power). Force them to the
@@ -224,10 +224,10 @@ window#waybar.empty #window {
 
 /* ── Tooltips ─────────────────────────────────────────────────── */
 tooltip {
-    background-color: rgba(17, 17, 27, 0.95);
-    border: 1px solid rgba(203, 166, 247, 0.4);
+    background-color: rgba(@CRUST_R@, @CRUST_G@, @CRUST_B@, 0.95);
+    border: 1px solid rgba(@MAUVE_R@, @MAUVE_G@, @MAUVE_B@, 0.4);
     border-radius: 10px;
-    color: #cdd6f4;
+    color: #@TEXT@;
 }
 
 tooltip label {

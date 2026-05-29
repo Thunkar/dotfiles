@@ -29,7 +29,7 @@ for arg in "$@"; do
     esac
 done
 
-ALL_UTILITIES=(hypr hyprpaper kitty waybar mako wofi wlogout xsettingsd autostart theme copyq)
+ALL_UTILITIES=(hypr hyprpaper kitty waybar mako wofi wlogout xsettingsd autostart applications theme)
 [[ ${#TARGETS[@]} -eq 0 ]] && TARGETS=("${ALL_UTILITIES[@]}")
 
 step() { printf "\n\033[1;35m▸ %s\033[0m\n" "$*"; }
@@ -165,6 +165,34 @@ sync_dir() {
     local src="$1" dest="$2"
     mkdir -p "$dest"
     cp -rT "$src" "$dest"
+    render_tpl_files "$dest"
+}
+
+# Single source of truth for colours: theme/colors.env. Any file in
+# the repo with a `.tpl` suffix is treated as a template — apply.sh
+# renders it (replacing @TOKEN@ with the matching env value) and
+# strips the `.tpl` suffix in the destination. Templates can use
+# component-specific overrides inline (e.g. mix in literal alpha:
+# `rgba(@BASE_R@, @BASE_G@, @BASE_B@, 0.65)`).
+RENDER_SED_ARGS=()
+load_color_tokens() {
+    [[ ${#RENDER_SED_ARGS[@]} -gt 0 ]] && return 0  # already cached
+    local env_file="$DOTFILES_DIR/theme/colors.env"
+    [[ -f "$env_file" ]] || return 0
+    while IFS='=' read -r key value; do
+        [[ "$key" =~ ^[A-Z_][A-Z0-9_]*$ ]] || continue
+        RENDER_SED_ARGS+=("-e" "s|@${key}@|${value}|g")
+    done < "$env_file"
+}
+render_tpl_files() {
+    local dest="$1"
+    load_color_tokens
+    [[ ${#RENDER_SED_ARGS[@]} -eq 0 ]] && return 0
+    find "$dest" -name '*.tpl' -type f -print0 | while IFS= read -r -d '' tpl; do
+        local rendered="${tpl%.tpl}"
+        sed "${RENDER_SED_ARGS[@]}" "$tpl" > "$rendered"
+        rm -f "$tpl"
+    done
 }
 
 apply_hypr() {
@@ -256,56 +284,6 @@ apply_wlogout() {
     ok "wlogout: applied"
 }
 
-# CopyQ ignores Qt's QPalette — it ships its own theme system stored
-# inline in ~/.config/copyq/copyq.conf's [Theme] section. We sync the
-# Catppuccin Mocha theme INI under ~/.config/copyq/themes/ AND merge
-# its keys into copyq.conf so the running daemon picks them up on
-# restart, without clobbering the user's [Options]/[Shortcuts]/etc.
-apply_copyq() {
-    local conf="$HOME/.config/copyq/copyq.conf"
-    local theme_src="$DOTFILES_DIR/copyq/themes/CatppuccinMocha.ini"
-    mkdir -p "$HOME/.config/copyq/themes"
-    cp -f "$theme_src" "$HOME/.config/copyq/themes/CatppuccinMocha.ini"
-
-    if [[ ! -f "$conf" ]]; then
-        # Fresh install — CopyQ writes copyq.conf on first launch.
-        # Start it briefly so the file exists, then we'll patch.
-        if pgrep -x copyq >/dev/null 2>&1; then
-            :  # already running
-        else
-            setsid -f copyq >/dev/null 2>&1
-            sleep 1
-            [[ -f "$conf" ]] || { warn "copyq: copyq.conf still missing"; return 0; }
-        fi
-    fi
-
-    # Merge the theme INI's [General] keys into copyq.conf's [Theme].
-    # Python keeps the rest of the conf untouched.
-    python3 - "$conf" "$theme_src" <<'PY'
-import configparser, sys
-conf_path, theme_path = sys.argv[1], sys.argv[2]
-src = configparser.ConfigParser(interpolation=None)
-src.read(theme_path)
-dst = configparser.ConfigParser(interpolation=None)
-dst.optionxform = str  # preserve case (CopyQ keys are mixed)
-dst.read(conf_path)
-if not dst.has_section("Theme"):
-    dst.add_section("Theme")
-for k, v in src["General"].items():
-    # strip surrounding quotes that configparser may keep
-    dst["Theme"][k] = v.strip()
-with open(conf_path, "w") as f:
-    dst.write(f, space_around_delimiters=False)
-PY
-
-    # Reload copyq so the new theme renders immediately.
-    if pgrep -x copyq >/dev/null 2>&1; then
-        pkill -x copyq 2>/dev/null || true
-        sleep 0.3
-        setsid -f copyq >/dev/null 2>&1 || (copyq >/dev/null 2>&1 &)
-    fi
-    ok "copyq: Catppuccin Mocha theme applied"
-}
 
 apply_xsettingsd() {
     sync_dir "$DOTFILES_DIR/xsettingsd" "$HOME/.config/xsettingsd"
@@ -329,6 +307,20 @@ apply_autostart() {
     pkill -f blueman-applet 2>/dev/null || true
     pkill -f blueman-tray 2>/dev/null || true
     ok "autostart: suppressed redundant tray applets"
+}
+
+# Per-app .desktop overrides — XDG spec says user files in
+# ~/.local/share/applications/ supersede /usr/share/applications/.
+# Use this for app-launch quirks (PrusaSlicer needs GDK_BACKEND=x11
+# under Wayland to avoid wxWidgets dropdown artifacting).
+apply_applications() {
+    sync_dir "$DOTFILES_DIR/applications" "$HOME/.local/share/applications"
+    # Refresh the desktop-file database so launchers (wofi) pick up the
+    # override immediately instead of next login.
+    if command -v update-desktop-database >/dev/null 2>&1; then
+        update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true
+    fi
+    ok "applications: desktop-entry overrides applied"
 }
 
 # GTK + minimal Qt theming + env. GTK is the primary theme target

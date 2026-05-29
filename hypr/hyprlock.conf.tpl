@@ -8,7 +8,7 @@ general {
 
 background {
     monitor     =
-    color       = rgba(30,30,46,1.0)
+    color       = rgba(@BASE_R@, @BASE_G@, @BASE_B@, 1.0)
     blur_passes = 3
     blur_size   = 8
     noise       = 0.012
@@ -21,7 +21,7 @@ background {
 label {
     monitor      =
     text         = cmd[update:1000] echo "$(date +%H:%M)"
-    color        = rgba(205,214,244,1.0)
+    color        = rgba(@TEXT_R@, @TEXT_G@, @TEXT_B@, 1.0)
     font_size    = 96
     font_family  = JetBrainsMono Nerd Font Bold
     position     = 0, 80
@@ -33,7 +33,7 @@ label {
 label {
     monitor      =
     text         = cmd[update:60000] echo "$(date '+%a %d %b %Y')"
-    color        = rgba(186,194,222,1.0)
+    color        = rgba(@SUBTEXT1_R@, @SUBTEXT1_G@, @SUBTEXT1_B@, 1.0)
     font_size    = 22
     font_family  = JetBrainsMono Nerd Font
     position     = 0, -10
@@ -45,7 +45,7 @@ label {
 label {
     monitor      =
     text         = $USER
-    color        = rgba(180,190,254,1.0)
+    color        = rgba(@LAVENDER_R@, @LAVENDER_G@, @LAVENDER_B@, 1.0)
     font_size    = 14
     font_family  = JetBrainsMono Nerd Font
     position     = 0, -90
@@ -59,15 +59,15 @@ input-field {
     size             = 320, 50
     outline_thickness = 2
     rounding         = 16
-    inner_color      = rgba(49,50,68,0.78)
-    outer_color      = rgba(203,166,247,0.85)
-    check_color      = rgba(166,227,161,1.0)
-    fail_color       = rgba(243,139,168,1.0)
-    font_color       = rgba(205,214,244,1.0)
-    placeholder_text = <span foreground="##a6adc8">enter password</span>
+    inner_color      = rgba(@SURFACE0_R@, @SURFACE0_G@, @SURFACE0_B@, 0.78)
+    outer_color      = rgba(@MAUVE_R@, @MAUVE_G@, @MAUVE_B@, 0.85)
+    check_color      = rgba(@GREEN_R@, @GREEN_G@, @GREEN_B@, 1.0)
+    fail_color       = rgba(@RED_R@, @RED_G@, @RED_B@, 1.0)
+    font_color       = rgba(@TEXT_R@, @TEXT_G@, @TEXT_B@, 1.0)
+    placeholder_text = <span foreground="##@SUBTEXT0@">enter password</span>
     fail_text        = <span>$FAIL ($ATTEMPTS)</span>
     fade_on_empty    = false
-    capslock_color   = rgba(249,226,175,1.0)
+    capslock_color   = rgba(@YELLOW_R@, @YELLOW_G@, @YELLOW_B@, 1.0)
     position         = 0, -160
     halign           = center
     valign           = center

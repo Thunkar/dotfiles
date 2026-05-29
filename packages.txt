@@ -18,7 +18,8 @@ waybar
 wofi
 wlogout              # logout / power menu launched from waybar's power pill
 mako
-copyq                # GUI clipboard manager: history, images, tray
+cliphist             # Wayland clipboard manager (text + images), picker via wofi
+wl-clipboard         # wl-copy / wl-paste — what cliphist + screenshots use
 
 # ── Terminal & shell ───────────────────────────────────────────────
 kitty

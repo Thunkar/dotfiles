@@ -2,12 +2,12 @@
 # Reload with: makoctl reload
 
 font=JetBrainsMono Nerd Font 11
-background-color=#1e1e2eee
-text-color=#cdd6f4
-border-color=#cba6f7
+background-color=#@BASE@ee
+text-color=#@TEXT@
+border-color=#@MAUVE@
 border-size=2
 border-radius=12
-progress-color=over #45475a
+progress-color=over #@SURFACE1@
 
 default-timeout=5000
 ignore-timeout=0
@@ -25,15 +25,15 @@ anchor=top-right
 output=
 
 [urgency=low]
-border-color=#89b4fa
+border-color=#@BLUE@
 default-timeout=3000
 
 [urgency=normal]
-border-color=#cba6f7
+border-color=#@MAUVE@
 
 [urgency=high]
-border-color=#f38ba8
-text-color=#f38ba8
+border-color=#@RED@
+text-color=#@RED@
 default-timeout=0
 
 # ── Messaging / chat apps ────────────────────────────────────────
@@ -44,16 +44,16 @@ default-timeout=0
 
 [app-name=Slack]
 default-timeout=10000
-border-color=#a6e3a1
-text-color=#a6e3a1
+border-color=#@GREEN@
+text-color=#@GREEN@
 width=440
 height=180
 padding=16,20
 
 [app-name=Signal]
 default-timeout=10000
-border-color=#89b4fa
-text-color=#89b4fa
+border-color=#@BLUE@
+text-color=#@BLUE@
 width=440
 height=180
 padding=16,20
@@ -62,24 +62,24 @@ padding=16,20
 # spaces (like "Telegram Desktop") must be quoted.
 [app-name=telegram-desktop]
 default-timeout=10000
-border-color=#74c7ec
-text-color=#74c7ec
+border-color=#@SAPPHIRE@
+text-color=#@SAPPHIRE@
 width=440
 height=180
 padding=16,20
 
 [app-name="Telegram Desktop"]
 default-timeout=10000
-border-color=#74c7ec
-text-color=#74c7ec
+border-color=#@SAPPHIRE@
+text-color=#@SAPPHIRE@
 width=440
 height=180
 padding=16,20
 
 [app-name=discord]
 default-timeout=10000
-border-color=#b4befe
-text-color=#b4befe
+border-color=#@LAVENDER@
+text-color=#@LAVENDER@
 width=440
 height=180
 padding=16,20

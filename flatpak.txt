@@ -1,0 +1,10 @@
+# Flatpak apps installed by apply.sh — one app ID per line.
+# Comments and blank lines are ignored.
+#
+# Installed user-scoped (no sudo) via `flatpak install --user flathub <id>`.
+# apply.sh ensures the flathub remote is added before installing.
+#
+# To add: drop the reverse-DNS app ID here, re-run ./apply.sh
+# To remove: delete the line AND run `flatpak uninstall --user <id>` manually
+
+com.prusa3d.PrusaSlicer    # 3D slicer — Wayland-clean (pacman build has wxGTK artifacts)

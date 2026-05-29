@@ -91,6 +91,27 @@ install_packages() {
     ok "packages OK"
 }
 
+# Flatpak app management. flatpak.txt is one app ID per line, comments
+# stripped. Installs user-scoped (no sudo) into ~/.local/share/flatpak/.
+install_flatpaks() {
+    [[ -f "$DOTFILES_DIR/flatpak.txt" ]] || return 0
+    command -v flatpak >/dev/null 2>&1 || {
+        warn "flatpak not installed — skipping flatpak.txt"
+        return 0
+    }
+    local apps
+    mapfile -t apps < <(grep -vE '^\s*(#|$)' "$DOTFILES_DIR/flatpak.txt" | awk '{print $1}')
+    [[ ${#apps[@]} -eq 0 ]] && return 0
+
+    step "ensuring flathub remote (--user)"
+    flatpak remote-add --if-not-exists --user flathub \
+        https://flathub.org/repo/flathub.flatpakrepo >/dev/null 2>&1 || true
+
+    step "installing/updating ${#apps[@]} flatpak apps"
+    flatpak install --user --noninteractive --or-update flathub "${apps[@]}"
+    ok "flatpaks OK"
+}
+
 ensure_zsh_login_shell() {
     local current; current="$(getent passwd "$USER" | cut -d: -f7)"
     if [[ "$current" != *zsh ]]; then
@@ -383,6 +404,7 @@ if (( DO_INSTALL )); then
     prime_sudo
     bootstrap_yay
     install_packages
+    install_flatpaks
     ensure_zsh_login_shell
     ensure_bluetooth_service
     ensure_sddm_theme

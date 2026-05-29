@@ -309,18 +309,40 @@ apply_autostart() {
     ok "autostart: suppressed redundant tray applets"
 }
 
-# Per-app .desktop overrides — XDG spec says user files in
-# ~/.local/share/applications/ supersede /usr/share/applications/.
-# Use this for app-launch quirks (PrusaSlicer needs GDK_BACKEND=x11
-# under Wayland to avoid wxWidgets dropdown artifacting).
+# Per-app .desktop overrides + URI-scheme registrations.
+# - sync any per-app .desktop overrides under applications/ (XDG spec
+#   says user files in ~/.local/share/applications/ supersede
+#   /usr/share/applications/);
+# - register custom URL handlers (e.g. prusaslicer:// from Printables).
 apply_applications() {
-    sync_dir "$DOTFILES_DIR/applications" "$HOME/.local/share/applications"
-    # Refresh the desktop-file database so launchers (wofi) pick up the
-    # override immediately instead of next login.
+    if [[ -d "$DOTFILES_DIR/applications" ]]; then
+        sync_dir "$DOTFILES_DIR/applications" "$HOME/.local/share/applications"
+    fi
+
+    # Pull the flatpak's exported .desktop files into the user database
+    # so launchers and xdg-mime see them.
     if command -v update-desktop-database >/dev/null 2>&1; then
         update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true
     fi
-    ok "applications: desktop-entry overrides applied"
+
+    # ── URL-scheme registrations ──────────────────────────────────
+    # Printables "Open in PrusaSlicer" buttons emit prusaslicer:// URIs.
+    # Point the handler at whichever PrusaSlicer is installed: prefer
+    # the Flatpak (com.prusa3d.PrusaSlicer.desktop), fall back to the
+    # packaged one (PrusaSlicer.desktop).
+    if command -v xdg-mime >/dev/null 2>&1; then
+        local prusa_desktop=""
+        if [[ -f /var/lib/flatpak/exports/share/applications/com.prusa3d.PrusaSlicer.desktop \
+           || -f "$HOME/.local/share/flatpak/exports/share/applications/com.prusa3d.PrusaSlicer.desktop" ]]; then
+            prusa_desktop="com.prusa3d.PrusaSlicer.desktop"
+        elif [[ -f /usr/share/applications/PrusaSlicer.desktop ]]; then
+            prusa_desktop="PrusaSlicer.desktop"
+        fi
+        if [[ -n "$prusa_desktop" ]]; then
+            xdg-mime default "$prusa_desktop" x-scheme-handler/prusaslicer 2>/dev/null || true
+            ok "applications: registered prusaslicer:// → $prusa_desktop"
+        fi
+    fi
 }
 
 # GTK + minimal Qt theming + env. GTK is the primary theme target
@@ -378,8 +400,9 @@ for util in "${TARGETS[@]}"; do
     fi
     # `theme` is a meta-handler that syncs multiple dirs (qt6ct/, qt5ct/,
     # gtk-3.0/, gtk-4.0/, environment.d/, kde/) — there is no top-level
-    # theme/ dir.
-    if [[ "$util" != "theme" && ! -d "$DOTFILES_DIR/$util" ]]; then
+    # theme/ dir. `applications` is similarly meta — it may have an
+    # applications/ dir or it may just do xdg-mime registrations.
+    if [[ "$util" != "theme" && "$util" != "applications" && ! -d "$DOTFILES_DIR/$util" ]]; then
         warn "$util: directory not found in repo, skipping"
         continue
     fi

@@ -76,3 +76,11 @@ nautilus-python      # nautilus extension support
 nwg-displays         # GUI monitor configurator (helps build monitors.conf)
 imagemagick          # used by apply.sh to generate fallback wallpaper
 python               # for the claude_usage.py waybar widget
+
+# ── Flatpak apps (not managed by pacman) ──────────────────────────
+# PrusaSlicer's pacman build has wxWidgets dropdown artifacts on
+# Wayland that no env-var workaround fixes. The Flathub build (its
+# own bundled wxGTK, sandboxed) renders cleanly. Install once with:
+#   flatpak install -y flathub com.prusa3d.PrusaSlicer
+# apply.sh registers the prusaslicer:// URL scheme automatically,
+# preferring the flatpak over the pacman build when both are present.

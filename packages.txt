@@ -55,26 +55,25 @@ noto-fonts-emoji
 papirus-icon-theme
 
 # ── Theming ────────────────────────────────────────────────────────
-# GTK is the primary theme target. For Qt, we use a minimal setup:
-# qt6ct/qt5ct as the platform-theme bridge, Fusion as the widget style,
-# and a static Catppuccin palette file. This is enough to make Qt apps
-# (CopyQ, pavucontrol, etc.) render dark without re-opening the
-# Dolphin/Kvantum/hyprqt6engine saga (which went nowhere — KDE
-# Frameworks apps remain unthemed; just don't use them).
-catppuccin-gtk-theme-mocha            # Catppuccin GTK3/4 theme (AUR) — primary theme
+# Wallpaper-driven via matugen: it extracts a Material You palette from
+# ~/.config/hypr/wallpapers/default.png and regenerates theme/colors.env
+# (→ every .tpl in the repo) plus the GTK libadwaita colors.css.
+#   - adw-gtk3: GTK3 theme that honours libadwaita @define-color, so the
+#     matugen colors.css actually applies to GTK3 apps.
+#   - qt6ct/qt5ct: Fusion widget style + a palette file rendered from
+#     colors.env, so Qt apps (cliphist picker, pavucontrol, …) match.
+#     KDE Frameworks apps stay un-themed on purpose; don't use them.
+adw-gtk3                              # GTK3 theme honouring libadwaita @define-color
+matugen                               # Material You palette generator (wallpaper → colors)
 qt5ct                                 # Qt5 platform theme bridge
 qt6ct                                 # Qt6 platform theme bridge
-sddm-catppuccin-git                   # Catppuccin login screen (AUR)
-qt5-graphicaleffects                  # required by SDDM Qt5 themes
-qt5-svg                               # required by SDDM Qt5 themes
-qt5-quickcontrols2                    # required by SDDM Qt5 themes
 
 # ── Utilities ──────────────────────────────────────────────────────
 hdrop-git            # dropdown terminal helper (AUR; declared makedeps are incomplete — see BUILD_DEPS in apply.sh)
-nautilus             # GTK file manager (omarchy/ML4W ship this; reads catppuccin-gtk natively)
+nautilus             # GTK file manager (reads the adw-gtk3 + matugen colors)
 nautilus-python      # nautilus extension support
 nwg-displays         # GUI monitor configurator (helps build monitors.conf)
-imagemagick          # used by apply.sh to generate fallback wallpaper
+imagemagick          # fallback wallpaper generation + image ops
 python               # for the claude_usage.py waybar widget
 
 # ── Flatpak apps (managed separately) ─────────────────────────────

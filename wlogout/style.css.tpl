@@ -1,4 +1,4 @@
-/* wlogout — Catppuccin Mocha overlay */
+/* wlogout overlay */
 
 * {
     background-image: none;

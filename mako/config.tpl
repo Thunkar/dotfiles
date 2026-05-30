@@ -1,4 +1,4 @@
-# Mako — notification daemon. Catppuccin Mocha.
+# Mako — notification daemon.
 # Reload with: makoctl reload
 
 font=JetBrainsMono Nerd Font 11

@@ -1,4 +1,4 @@
-# Hyprlock — Catppuccin Mocha lock screen.
+# Hyprlock — lock screen.
 
 general {
     grace            = 2

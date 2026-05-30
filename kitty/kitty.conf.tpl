@@ -1,4 +1,4 @@
-# Kitty — Catppuccin Mocha, transparent, zsh.
+# Kitty — transparent, zsh.
 
 # ── Shell ──────────────────────────────────────────────────────────
 # Hard-coded so kitty does not fall back to fish (or whatever the
@@ -33,7 +33,7 @@ tab_bar_style       powerline
 tab_powerline_style slanted
 tab_title_template  "{index}: {title[:24]}"
 
-# ── Catppuccin Mocha palette ───────────────────────────────────────
+# ── Color palette ───────────────────────────────────────
 foreground              #@TEXT@
 background              #@BASE@
 selection_foreground    #@BASE@

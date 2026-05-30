@@ -1,4 +1,4 @@
-# Catppuccin Mocha — shared color tokens.
+# Shared color tokens.
 # Used by hyprland borders, shadows, layout indicators.
 
 $rosewater = rgb(@ROSEWATER@)

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Floating kitty window running pulsemixer — minimal Catppuccin TUI mixer
+# Floating kitty window running pulsemixer — minimal TUI mixer
 # with per-app volume control. Window rule (`hypr-audio-popup`) sizes
 # and centers it; ESC inside pulsemixer closes the window.
 #

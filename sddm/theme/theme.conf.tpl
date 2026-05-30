@@ -1,0 +1,18 @@
+[General]
+# Palette injected from theme/colors.env at apply time. Main.qml reads
+# these via config.<key>. Hex values keep the leading '#'.
+
+ColorBase      =#@BASE@
+ColorMantle    =#@MANTLE@
+ColorCrust     =#@CRUST@
+ColorSurface0  =#@SURFACE0@
+ColorSurface1  =#@SURFACE1@
+ColorText      =#@TEXT@
+ColorSubtext   =#@SUBTEXT1@
+ColorOverlay   =#@OVERLAY0@
+ColorAccent    =#@MAUVE@
+ColorAccentFg  =#@CRUST@
+ColorError     =#@RED@
+
+Font           =JetBrainsMono Nerd Font
+FontSize       =11

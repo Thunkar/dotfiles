@@ -1,6 +1,6 @@
-/* Catppuccin Mocha — minimal floating-pill bar.
+/* minimal floating-pill bar.
  * The bar window itself is invisible; each module group gets its own
- * rounded "pill" with a soft Catppuccin tint and 1px lavender border. */
+ * rounded "pill" with a soft accent tint and 1px lavender border. */
 
 * {
     font-family: "JetBrainsMono Nerd Font", "Symbols Nerd Font", "Noto Sans", monospace;

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Floating kitty window running bluetuith — TUI Bluetooth manager that
-# matches the rest of the system's Catppuccin terminal aesthetic.
+# matches the rest of the system's terminal aesthetic.
 # Right-click on the waybar bluetooth pill opens blueman-manager for
 # everything that doesn't fit in a TUI (audio profile sinks, OBEX, …).
 

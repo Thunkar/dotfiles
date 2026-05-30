@@ -1,4 +1,4 @@
-/* Catppuccin Mocha — wofi launcher */
+/* wofi launcher */
 
 * {
     font-family: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;

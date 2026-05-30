@@ -1,0 +1,29 @@
+# Matugen — Material You palette generator.
+#
+# apply.sh's generate_palette runs:
+#   matugen --config <this> image ~/.config/hypr/wallpapers/default.<ext>
+#
+# Two outputs:
+#   1. theme/colors.env   — our token format; the rest of the repo's
+#      .tpl files render from it via apply.sh's sed pipeline.
+#   2. ~/.config/gtk-{3,4}.0/colors.css — libadwaita @define-color block
+#      so GTK apps (Nautilus, file pickers) match too.
+#
+# The colors.env path points at the live repo so the generated palette
+# is the committed source of truth. Edit the WALLPAPER, not colors.env.
+
+[config]
+reload_apps = true
+
+# colors.env regenerated into the repo's theme/ dir.
+[templates.colorsenv]
+input_path  = "~/.config/matugen/templates/colors.env"
+output_path = "~/Repos/dotfiles/theme/colors.env"
+
+[templates.gtk3]
+input_path  = "~/.config/matugen/templates/gtk-colors.css"
+output_path = "~/.config/gtk-3.0/colors.css"
+
+[templates.gtk4]
+input_path  = "~/.config/matugen/templates/gtk-colors.css"
+output_path = "~/.config/gtk-4.0/colors.css"

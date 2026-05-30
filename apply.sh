@@ -125,6 +125,14 @@ ensure_screenshot_dir() {
     mkdir -p "$HOME/Pictures/Screenshots"
 }
 
+ensure_git_merge_driver() {
+    # .gitattributes marks hypr/conf.d/10-monitors.conf as merge=ours so
+    # `git merge upstream` keeps this machine's monitor layout. The
+    # driver itself is per-clone local config — register it here.
+    [[ -d "$DOTFILES_DIR/.git" ]] || return 0
+    git -C "$DOTFILES_DIR" config merge.ours.driver true 2>/dev/null || true
+}
+
 ensure_bluetooth_service() {
     # The waybar bluetooth module talks to bluez over D-Bus, which only
     # works once bluetoothd is running. Enable + start the system unit
@@ -134,22 +142,81 @@ ensure_bluetooth_service() {
     fi
 }
 
+# Wallpaper-driven palette generation. This is the SOURCE of the whole
+# theme: matugen extracts a Material You palette from the wallpaper and
+# regenerates BOTH theme/colors.env (consumed by every .tpl in the repo
+# via the sed pipeline) AND ~/.config/gtk-{3,4}.0/colors.css (libadwaita
+# overrides for GTK apps).
+#
+# Must run BEFORE any sync_dir / .tpl rendering so the fresh colors.env
+# is what gets rendered. Validates the generated colors.env (rejects it
+# if matugen left template markers behind) and keeps the previous
+# committed colors.env on any failure — the desktop never ends up with
+# a broken palette.
+WALLPAPER_DEST="$HOME/.config/hypr/wallpapers/default.png"
+generate_palette() {
+    [[ -f "$WALLPAPER_DEST" ]] || return 0
+    command -v matugen >/dev/null 2>&1 || {
+        warn "matugen not installed — using committed theme/colors.env as-is"
+        return 0
+    }
+    # Sync the matugen config + templates first so matugen can find them.
+    sync_dir "$DOTFILES_DIR/matugen" "$HOME/.config/matugen"
+
+    local env_file="$DOTFILES_DIR/theme/colors.env"
+    local backup; backup="$(mktemp)"
+    cp "$env_file" "$backup" 2>/dev/null || true
+
+    # --prefer saturation: when matugen finds several candidate source
+    # colors it picks the most saturated one (no TTY here, so it can't
+    # prompt). Gives a vivid accent rather than a muddy average.
+    if matugen --config "$HOME/.config/matugen/config.toml" \
+               --mode dark \
+               --prefer saturation \
+               image "$WALLPAPER_DEST" >/dev/null 2>&1 \
+       && ! grep -q '{{' "$env_file" 2>/dev/null; then
+        ok "matugen: palette regenerated from $(basename "$WALLPAPER_DEST")"
+    else
+        cp "$backup" "$env_file" 2>/dev/null || true
+        warn "matugen: generation failed — kept previous colors.env"
+    fi
+    rm -f "$backup"
+    # Force token reload so the rest of this run renders the new palette.
+    RENDER_SED_ARGS=()
+}
+
 ensure_sddm_theme() {
-    # The AUR sddm-catppuccin-git package installs a single theme dir
-    # `catppuccin` (flavor + accent are selected inside theme.conf, not
-    # via separate theme dirs). Older versions used `catppuccin-mocha*`
-    # subdirs — try both patterns so this works across package versions.
-    local theme_dir
-    for candidate in /usr/share/sddm/themes/catppuccin-mocha-mauve \
-                     /usr/share/sddm/themes/catppuccin-mocha \
-                     /usr/share/sddm/themes/catppuccin; do
-        [[ -d "$candidate" ]] && { theme_dir="$candidate"; break; }
-    done
-    [[ -z "$theme_dir" ]] && return 0
-    local theme_name; theme_name="$(basename "$theme_dir")"
+    # Install our own self-contained SDDM theme from sddm/theme/ into
+    # /usr/share/sddm/themes/dotfiles/, rendering theme.conf.tpl from
+    # the colour tokens. No third-party SDDM theme package involved.
+    [[ -d "$DOTFILES_DIR/sddm/theme" ]] || return 0
+    command -v sddm >/dev/null 2>&1 || { warn "sddm not installed — skipping theme"; return 0; }
+
+    local dest=/usr/share/sddm/themes/dotfiles
+    sudo rm -rf "$dest"
+    sudo mkdir -p "$dest"
+    sudo cp -rT "$DOTFILES_DIR/sddm/theme" "$dest"
+    sudo rm -f "$dest/theme.conf.tpl"
+
+    # Render theme.conf from colour tokens (same pipeline as everything else).
+    load_color_tokens
+    local rendered; rendered="$(mktemp)"
+    sed "${RENDER_SED_ARGS[@]}" "$DOTFILES_DIR/sddm/theme/theme.conf.tpl" > "$rendered"
+    sudo install -m 644 "$rendered" "$dest/theme.conf"
+    rm -f "$rendered"
+
+    # Blurred login background: reuse the desktop wallpaper if present.
+    if [[ -f "$HOME/.config/hypr/wallpapers/default.jpg" ]]; then
+        sudo install -m 644 "$HOME/.config/hypr/wallpapers/default.jpg" "$dest/background.jpg"
+    fi
+
     sudo mkdir -p /etc/sddm.conf.d
-    printf "[Theme]\nCurrent=%s\n" "$theme_name" | sudo tee /etc/sddm.conf.d/10-catppuccin.conf >/dev/null
-    ok "sddm: theme set to $theme_name"
+    printf "[Theme]
+Current=dotfiles
+" | sudo tee /etc/sddm.conf.d/10-theme.conf >/dev/null
+    sudo rm -f /etc/sddm.conf.d/10-catppuccin.conf 2>/dev/null || true
+
+    ok "sddm: installed self-contained 'dotfiles' theme (palette from colors.env)"
 }
 
 ensure_claude_usage_conf() {
@@ -161,22 +228,19 @@ ensure_claude_usage_conf() {
 }
 
 ensure_default_wallpaper() {
+    # Install the repo's wallpaper to ~/.config/hypr/wallpapers/default.png.
+    # This single image is the theme's seed: hyprpaper shows it, SDDM
+    # blurs it on the login screen, and matugen derives the whole
+    # palette from it. Drop a different file in wallpapers/ + repoint
+    # this to reskin the entire desktop.
     local wp_dir="$HOME/.config/hypr/wallpapers"
-    local wp="$wp_dir/default.jpg"
-    [[ -f "$wp" ]] && return 0
     mkdir -p "$wp_dir"
-    if command -v magick >/dev/null 2>&1; then
-        magick -size 3840x2160 \
-            gradient:'#1e1e2e-#181825' \
-            "$wp"
-        ok "generated fallback wallpaper at $wp"
-    elif command -v convert >/dev/null 2>&1; then
-        convert -size 3840x2160 \
-            gradient:'#1e1e2e-#181825' \
-            "$wp"
-        ok "generated fallback wallpaper at $wp"
-    else
-        warn "no imagemagick — drop a wallpaper at $wp manually"
+    local src; src="$(ls "$DOTFILES_DIR"/wallpapers/* 2>/dev/null | head -1)"
+    if [[ -n "$src" ]]; then
+        install -m 644 "$src" "$wp_dir/default.png"
+    elif [[ ! -f "$wp_dir/default.png" ]] && command -v magick >/dev/null 2>&1; then
+        magick -size 3840x2160 gradient:'#11111b-#1e1e2e' "$wp_dir/default.png"
+        warn "no wallpaper in repo — generated a placeholder gradient"
     fi
 }
 
@@ -263,12 +327,18 @@ PY
 
 apply_hyprpaper() {
     sync_dir "$DOTFILES_DIR/hyprpaper" "$HOME/.config/hypr"  # config lives next to hyprland.conf
+    # hyprpaper does NOT expand ~ or $HOME in its config — paths must be
+    # absolute or it silently fails to preload (→ "Monitor has no target").
+    sed -i "s|@HOME@|$HOME|g" "$HOME/.config/hypr/hyprpaper.conf"
     if pgrep -x hyprpaper >/dev/null 2>&1; then
         pkill -x hyprpaper || true
         sleep 0.2
     fi
     if pgrep -x Hyprland >/dev/null 2>&1; then
         setsid -f hyprpaper >/dev/null 2>&1 || (hyprpaper >/dev/null 2>&1 &)
+        # Drive the wallpaper over IPC per-monitor (static config lines
+        # race against preload — see hypr/scripts/wallpaper.sh).
+        ( "$HOME/.config/hypr/scripts/wallpaper.sh" & ) 2>/dev/null || true
     fi
     ok "hyprpaper: applied"
 }
@@ -368,7 +438,7 @@ apply_applications() {
 
 # GTK + minimal Qt theming + env. GTK is the primary theme target
 # (Nautilus, CopyQ's dialogs, portals); Qt apps get a Fusion-styled
-# Catppuccin palette via qt6ct/qt5ct so CopyQ et al. render dark.
+# the palette via qt6ct/qt5ct so CopyQ et al. render dark.
 # KDE Frameworks 6 apps stay un-themed on purpose — see packages.txt.
 apply_theme() {
     sync_dir "$DOTFILES_DIR/qt6ct"          "$HOME/.config/qt6ct"
@@ -376,6 +446,9 @@ apply_theme() {
     sync_dir "$DOTFILES_DIR/gtk-3.0"        "$HOME/.config/gtk-3.0"
     sync_dir "$DOTFILES_DIR/gtk-4.0"        "$HOME/.config/gtk-4.0"
     sync_dir "$DOTFILES_DIR/environment.d"  "$HOME/.config/environment.d"
+    sync_dir "$DOTFILES_DIR/matugen"        "$HOME/.config/matugen"
+    # (matugen palette generation happens once, up front, in
+    # generate_palette — gtk-{3,4}.0/colors.css is produced there.)
 
     # qt6ct/qt5ct's color_scheme_path field needs an absolute path —
     # its INI parser does not expand $HOME or ~. We use @HOME@ as a
@@ -390,13 +463,13 @@ apply_theme() {
     systemctl --user import-environment 2>/dev/null || true
 
     if command -v gsettings >/dev/null 2>&1; then
-        gsettings set org.gnome.desktop.interface gtk-theme    "catppuccin-mocha-mauve-standard+default" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface gtk-theme    "adw-gtk3-dark" 2>/dev/null || true
         gsettings set org.gnome.desktop.interface icon-theme   "Papirus-Dark"                            2>/dev/null || true
-        gsettings set org.gnome.desktop.interface cursor-theme "catppuccin-mocha-dark-cursors"           2>/dev/null || true
+        gsettings set org.gnome.desktop.interface cursor-theme "Adwaita"           2>/dev/null || true
         gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"                             2>/dev/null || true
         gsettings set org.gnome.desktop.interface font-name    "Noto Sans 11"                            2>/dev/null || true
     fi
-    ok "theme: GTK applied (Catppuccin Mocha Mauve)"
+    ok "theme: GTK applied"
 }
 
 # ── run ─────────────────────────────────────────────────────────────
@@ -411,8 +484,14 @@ if (( DO_INSTALL )); then
 fi
 
 ensure_screenshot_dir
+ensure_git_merge_driver
 ensure_default_wallpaper
 ensure_claude_usage_conf
+
+# Regenerate the palette from the wallpaper BEFORE rendering any
+# templates, so colors.env is fresh for the whole apply pass.
+step "generating palette from wallpaper"
+generate_palette
 
 step "applying configs: ${TARGETS[*]}"
 for util in "${TARGETS[@]}"; do

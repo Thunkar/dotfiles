@@ -1,0 +1,10 @@
+[SddmGreeterTheme]
+Name=dotfiles
+Description=Self-contained dotfiles login theme (palette from theme/colors.env)
+Author=thunkar
+License=MIT
+Type=sddm-theme
+Version=1.0
+QtVersion=qt6
+MainScript=Main.qml
+ConfigFile=theme.conf

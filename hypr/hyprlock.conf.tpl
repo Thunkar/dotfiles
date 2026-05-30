@@ -1,13 +1,17 @@
 # Hyprlock — lock screen.
 
 general {
-    grace            = 2
-    hide_cursor      = true
-    disable_loading_bar = true
+    hide_cursor = true
+    # NOTE: `grace` and `disable_loading_bar` were removed from the
+    # [general] schema in hyprlock 0.9.x — leaving them in makes
+    # hyprlock fail to lock. Do not re-add them here.
 }
 
 background {
     monitor     =
+    # Blur the actual wallpaper (blur_* do nothing without a path).
+    # apply.sh substitutes @HOME@ → absolute path (hyprlock won't expand ~).
+    path        = @HOME@/.config/hypr/wallpapers/default.png
     color       = rgba(@BASE_R@, @BASE_G@, @BASE_B@, 1.0)
     blur_passes = 3
     blur_size   = 8

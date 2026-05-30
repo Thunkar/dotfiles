@@ -29,7 +29,7 @@ for arg in "$@"; do
     esac
 done
 
-ALL_UTILITIES=(hypr hyprpaper kitty waybar mako wofi wlogout xsettingsd autostart applications theme)
+ALL_UTILITIES=(hypr kitty waybar mako wofi wlogout xsettingsd autostart applications theme)
 [[ ${#TARGETS[@]} -eq 0 ]] && TARGETS=("${ALL_UTILITIES[@]}")
 
 step() { printf "\n\033[1;35m▸ %s\033[0m\n" "$*"; }
@@ -205,9 +205,17 @@ ensure_sddm_theme() {
     sudo install -m 644 "$rendered" "$dest/theme.conf"
     rm -f "$rendered"
 
-    # Blurred login background: reuse the desktop wallpaper if present.
-    if [[ -f "$HOME/.config/hypr/wallpapers/default.jpg" ]]; then
-        sudo install -m 644 "$HOME/.config/hypr/wallpapers/default.jpg" "$dest/background.jpg"
+    # Blurred login background generated from the desktop wallpaper, so
+    # the login screen matches the session (the original ask). We blur
+    # at install time with imagemagick — no QML GraphicalEffects dep.
+    local wp="$HOME/.config/hypr/wallpapers/default.png"
+    if [[ -f "$wp" ]] && command -v magick >/dev/null 2>&1; then
+        local bg; bg="$(mktemp --suffix=.png)"
+        magick "$wp" -resize 2560x -blur 0x18 -modulate 70 "$bg" 2>/dev/null \
+            && sudo install -m 644 "$bg" "$dest/background.png"
+        rm -f "$bg"
+    elif [[ -f "$wp" ]]; then
+        sudo install -m 644 "$wp" "$dest/background.png"   # unblurred fallback
     fi
 
     sudo mkdir -p /etc/sddm.conf.d
@@ -228,19 +236,38 @@ ensure_claude_usage_conf() {
 }
 
 ensure_default_wallpaper() {
-    # Install the repo's wallpaper to ~/.config/hypr/wallpapers/default.png.
-    # This single image is the theme's seed: hyprpaper shows it, SDDM
-    # blurs it on the login screen, and matugen derives the whole
-    # palette from it. Drop a different file in wallpapers/ + repoint
-    # this to reskin the entire desktop.
+    # Normalise the chosen wallpaper to ~/.config/hypr/wallpapers/default.png.
+    # This single PNG is the theme's seed: swaybg shows it, hyprlock and
+    # SDDM blur it, and matugen derives the whole palette from it.
+    #
+    # Source of truth = the first image in the repo's wallpapers/ dir
+    # (any format — jpg/png/webp/…). It's converted to real PNG so every
+    # consumer (swaybg/matugen/libpng) is happy regardless of input
+    # format. wallpapers/ is gitignored, so the wallpaper is a per-machine
+    # choice (like monitors.conf): drop your image there, run apply.
     local wp_dir="$HOME/.config/hypr/wallpapers"
+    local dest="$wp_dir/default.png"
     mkdir -p "$wp_dir"
-    local src; src="$(ls "$DOTFILES_DIR"/wallpapers/* 2>/dev/null | head -1)"
+
+    local src; src="$(find "$DOTFILES_DIR/wallpapers" -maxdepth 1 -type f \
+        ! -name '.gitkeep' 2>/dev/null | head -1)"
+
     if [[ -n "$src" ]]; then
-        install -m 644 "$src" "$wp_dir/default.png"
-    elif [[ ! -f "$wp_dir/default.png" ]] && command -v magick >/dev/null 2>&1; then
-        magick -size 3840x2160 gradient:'#11111b-#1e1e2e' "$wp_dir/default.png"
-        warn "no wallpaper in repo — generated a placeholder gradient"
+        if command -v magick >/dev/null 2>&1; then
+            magick "$src" "$dest"            # convert any format → PNG
+        elif command -v convert >/dev/null 2>&1; then
+            convert "$src" "$dest"
+        else
+            install -m 644 "$src" "$dest"    # last resort (assumes PNG)
+        fi
+        ok "wallpaper: $(basename "$src") → default.png"
+    elif [[ ! -f "$dest" ]]; then
+        if command -v magick >/dev/null 2>&1; then
+            magick -size 3840x2160 gradient:'#11111b-#1e1e2e' "$dest"
+            warn "no wallpaper in wallpapers/ — generated a placeholder gradient"
+        else
+            warn "no wallpaper in wallpapers/ and no imagemagick — set one manually at $dest"
+        fi
     fi
 }
 
@@ -283,9 +310,17 @@ render_tpl_files() {
 apply_hypr() {
     sync_dir "$DOTFILES_DIR/hypr" "$HOME/.config/hypr"
     chmod +x "$HOME/.config/hypr/scripts/"*.sh 2>/dev/null || true
+    # hyprlock won't expand ~ in its background path — substitute @HOME@.
+    sed -i "s|@HOME@|$HOME|g" "$HOME/.config/hypr/hyprlock.conf" 2>/dev/null || true
     if pgrep -x Hyprland >/dev/null 2>&1; then
         hyprctl reload >/dev/null
         migrate_workspaces_to_rules
+        # (Re)start the wallpaper. swaybg is single-shot per output; kill
+        # any old instance and relaunch so a wallpaper change shows now.
+        if command -v swaybg >/dev/null 2>&1; then
+            pkill -x swaybg 2>/dev/null || true
+            setsid -f swaybg -i "$HOME/.config/hypr/wallpapers/default.png" -m fill >/dev/null 2>&1 || true
+        fi
         ok "hypr: applied + reloaded"
     else
         ok "hypr: applied (no running session to reload)"
@@ -323,24 +358,6 @@ for block in re.split(r"Workspace rule ", rules):
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=3,
     )
 PY
-}
-
-apply_hyprpaper() {
-    sync_dir "$DOTFILES_DIR/hyprpaper" "$HOME/.config/hypr"  # config lives next to hyprland.conf
-    # hyprpaper does NOT expand ~ or $HOME in its config — paths must be
-    # absolute or it silently fails to preload (→ "Monitor has no target").
-    sed -i "s|@HOME@|$HOME|g" "$HOME/.config/hypr/hyprpaper.conf"
-    if pgrep -x hyprpaper >/dev/null 2>&1; then
-        pkill -x hyprpaper || true
-        sleep 0.2
-    fi
-    if pgrep -x Hyprland >/dev/null 2>&1; then
-        setsid -f hyprpaper >/dev/null 2>&1 || (hyprpaper >/dev/null 2>&1 &)
-        # Drive the wallpaper over IPC per-monitor (static config lines
-        # race against preload — see hypr/scripts/wallpaper.sh).
-        ( "$HOME/.config/hypr/scripts/wallpaper.sh" & ) 2>/dev/null || true
-    fi
-    ok "hyprpaper: applied"
 }
 
 apply_kitty() {

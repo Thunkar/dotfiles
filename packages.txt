@@ -1,0 +1,84 @@
+# Packages required by this dotfiles repo. Installed by apply.sh via yay.
+# Comments and blank lines are ignored.
+
+# ── Compositor ─────────────────────────────────────────────────────
+hyprland
+hyprpaper
+hyprshot
+hyprpolkitagent
+hypridle             # idle daemon (auto-lock, DPMS, suspend)
+hyprlock             # lock screen
+polkit-kde-agent     # graphical sudo prompts for GUI apps (referenced by hypr autostart)
+xdg-desktop-portal-hyprland
+xdg-desktop-portal-gtk     # native file-chooser portal for Electron/Chromium
+xsettingsd                 # broadcasts gsettings → XSettings for XWayland apps
+
+# ── Bar / launcher / notifications ─────────────────────────────────
+waybar
+wofi
+wlogout              # logout / power menu launched from waybar's power pill
+mako
+cliphist             # Wayland clipboard manager (text + images), picker via wofi
+wl-clipboard         # wl-copy / wl-paste — what cliphist + screenshots use
+
+# ── Terminal & shell ───────────────────────────────────────────────
+kitty
+zsh
+
+# ── Screenshots / clipboard ────────────────────────────────────────
+grimblast-git
+grim
+slurp
+satty                # screenshot annotation editor (Wayland-native)
+wl-clipboard
+
+# ── Media / system control ─────────────────────────────────────────
+playerctl
+brightnessctl
+pavucontrol
+pulsemixer           # minimalist TUI mixer used by the waybar audio popup
+nm-connection-editor # GUI for NM profiles (right-click on waybar network pill)
+                     # NOTE: we do NOT install network-manager-applet — the tray
+                     # applet would duplicate the waybar network module.
+
+# ── Bluetooth ──────────────────────────────────────────────────────
+bluez                # bluetooth stack
+bluez-utils          # bluetoothctl
+blueman              # full GTK manager (right-click on bt pill)
+bluetuith            # TUI manager used by the waybar bluetooth popup
+
+# ── Fonts / icons ──────────────────────────────────────────────────
+ttf-jetbrains-mono-nerd
+ttf-nerd-fonts-symbols
+noto-fonts
+noto-fonts-emoji
+papirus-icon-theme
+
+# ── Theming ────────────────────────────────────────────────────────
+# GTK is the primary theme target. For Qt, we use a minimal setup:
+# qt6ct/qt5ct as the platform-theme bridge, Fusion as the widget style,
+# and a static Catppuccin palette file. This is enough to make Qt apps
+# (CopyQ, pavucontrol, etc.) render dark without re-opening the
+# Dolphin/Kvantum/hyprqt6engine saga (which went nowhere — KDE
+# Frameworks apps remain unthemed; just don't use them).
+catppuccin-gtk-theme-mocha            # Catppuccin GTK3/4 theme (AUR) — primary theme
+qt5ct                                 # Qt5 platform theme bridge
+qt6ct                                 # Qt6 platform theme bridge
+sddm-catppuccin-git                   # Catppuccin login screen (AUR)
+qt5-graphicaleffects                  # required by SDDM Qt5 themes
+qt5-svg                               # required by SDDM Qt5 themes
+qt5-quickcontrols2                    # required by SDDM Qt5 themes
+
+# ── Utilities ──────────────────────────────────────────────────────
+hdrop-git            # dropdown terminal helper (AUR; declared makedeps are incomplete — see BUILD_DEPS in apply.sh)
+nautilus             # GTK file manager (omarchy/ML4W ship this; reads catppuccin-gtk natively)
+nautilus-python      # nautilus extension support
+nwg-displays         # GUI monitor configurator (helps build monitors.conf)
+imagemagick          # used by apply.sh to generate fallback wallpaper
+python               # for the claude_usage.py waybar widget
+
+# ── Flatpak apps (managed separately) ─────────────────────────────
+# Apps shipped as Flatpak live in flatpak.txt (one app ID per line).
+# apply.sh's install_flatpaks step installs them at --user scope and
+# keeps them updated. apply.sh's URL-scheme registration prefers the
+# flatpak variant when both are present (e.g. PrusaSlicer).

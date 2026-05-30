@@ -3,10 +3,9 @@
 // just QtQuick + QtQuick.Controls so it works on a bare Qt6 install.
 //
 // All colors/fonts come from theme.conf (rendered from theme/colors.env).
-import QtQuick 2.15
-import QtQuick.Controls 2.15
-import QtQuick.Layouts 1.15
-import SddmComponents 2.0
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
 
 Rectangle {
     id: root
@@ -39,6 +38,25 @@ Rectangle {
         }
     }
 
+    // ── Background (pre-blurred wallpaper, generated at install) ─────
+    // background.png is produced by apply.sh's ensure_sddm_theme from
+    // the desktop wallpaper (magick blur+dim), so no QML blur effect /
+    // GraphicalEffects dependency is needed. Falls back to ColorBase.
+    Image {
+        anchors.fill: parent
+        source: "background.png"
+        fillMode: Image.PreserveAspectCrop
+        asynchronous: true
+        cache: true
+        visible: status === Image.Ready
+    }
+    // Dark scrim over the wallpaper for text legibility.
+    Rectangle {
+        anchors.fill: parent
+        color: config.ColorBase
+        opacity: 0.45
+    }
+
     ColumnLayout {
         anchors.centerIn: parent
         spacing: 28
@@ -65,8 +83,8 @@ Rectangle {
         // ── Login card ───────────────────────────────────────────
         Rectangle {
             Layout.alignment: Qt.AlignHCenter
-            Layout.preferredWidth: 360
-            Layout.preferredHeight: userCol.implicitHeight + 40
+            Layout.preferredWidth: 380
+            Layout.preferredHeight: userCol.implicitHeight + 56
             radius: 16
             color: config.ColorMantle
             border.color: root.cSurface1
@@ -75,8 +93,8 @@ Rectangle {
             ColumnLayout {
                 id: userCol
                 anchors.centerIn: parent
-                width: parent.width - 40
-                spacing: 14
+                width: parent.width - 56
+                spacing: 16
 
                 // Username
                 Label {
@@ -99,12 +117,16 @@ Rectangle {
                     font.family: root.fontFamily
                     font.pixelSize: root.fontSize
                     focus: true
+                    leftPadding: 14
+                    rightPadding: 14
+                    topPadding: 12
+                    bottomPadding: 12
                     background: Rectangle {
                         radius: 10
                         color: root.cSurface0
                         border.color: pw.activeFocus ? root.cAccent : root.cSurface1
                         border.width: 2
-                        implicitHeight: 44
+                        implicitHeight: 46
                     }
                     onAccepted: sddm.login(
                         userModel.lastUser, pw.text, sessionModel.lastIndex)

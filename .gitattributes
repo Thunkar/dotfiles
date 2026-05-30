@@ -1,0 +1,7 @@
+# Keep our machine-specific monitor layout on `git merge upstream`.
+# `merge=ours` tells git to keep OUR version of this file in any merge.
+#
+# NOTE: the driver must also be registered once per clone:
+#     git config merge.ours.driver true
+# (apply.sh does this automatically; run it by hand on a fresh clone.)
+hypr/conf.d/10-monitors.conf merge=ours

@@ -125,6 +125,14 @@ ensure_screenshot_dir() {
     mkdir -p "$HOME/Pictures/Screenshots"
 }
 
+ensure_git_merge_driver() {
+    # .gitattributes marks hypr/conf.d/10-monitors.conf as merge=ours so
+    # `git merge upstream` keeps this machine's monitor layout. The
+    # driver itself is per-clone local config — register it here.
+    [[ -d "$DOTFILES_DIR/.git" ]] || return 0
+    git -C "$DOTFILES_DIR" config merge.ours.driver true 2>/dev/null || true
+}
+
 ensure_bluetooth_service() {
     # The waybar bluetooth module talks to bluez over D-Bus, which only
     # works once bluetoothd is running. Enable + start the system unit
@@ -476,6 +484,7 @@ if (( DO_INSTALL )); then
 fi
 
 ensure_screenshot_dir
+ensure_git_merge_driver
 ensure_default_wallpaper
 ensure_claude_usage_conf
 

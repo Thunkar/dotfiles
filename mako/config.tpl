@@ -13,6 +13,17 @@ default-timeout=5000
 ignore-timeout=0
 group-by=app-name
 
+# Mouse actions:
+#   left  → invoke the notification's default action (focuses/opens the
+#           originating app via xdg-activation; honoured because hypr
+#           focus_on_activate=true) and dismiss it
+#   right → dismiss
+#   middle→ dismiss all
+on-button-left=invoke-default-action
+on-button-right=dismiss
+on-button-middle=dismiss-all
+on-touch=invoke-default-action
+
 width=380
 height=140
 margin=10

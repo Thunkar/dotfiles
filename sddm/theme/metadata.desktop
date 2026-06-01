@@ -5,6 +5,6 @@ Author=thunkar
 License=MIT
 Type=sddm-theme
 Version=1.0
-QtVersion=qt6
+QtVersion=6
 MainScript=Main.qml
 ConfigFile=theme.conf

@@ -8,3 +8,4 @@
 # To remove: delete the line AND run `flatpak uninstall --user <id>` manually
 
 com.prusa3d.PrusaSlicer    # 3D slicer — Wayland-clean (pacman build has wxGTK artifacts)
+org.videolan.VLC           # native VLC 3.0 crashes/no-window on this Hyprland+AMD box; flatpak bundles its own Qt+mesa

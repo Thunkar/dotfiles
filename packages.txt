@@ -3,7 +3,7 @@
 
 # ── Compositor ─────────────────────────────────────────────────────
 hyprland
-hyprpaper
+swaybg               # wallpaper (native, reliable; replaced hyprpaper)
 hyprshot
 hyprpolkitagent
 hypridle             # idle daemon (auto-lock, DPMS, suspend)
@@ -58,12 +58,13 @@ papirus-icon-theme
 # Wallpaper-driven via matugen: it extracts a Material You palette from
 # ~/.config/hypr/wallpapers/default.png and regenerates theme/colors.env
 # (→ every .tpl in the repo) plus the GTK libadwaita colors.css.
-#   - adw-gtk3: GTK3 theme that honours libadwaita @define-color, so the
-#     matugen colors.css actually applies to GTK3 apps.
+#   - adw-gtk-theme: provides the adw-gtk3/adw-gtk3-dark GTK3 themes
+#     that honour libadwaita @define-color, so the matugen colors.css
+#     applies to GTK3 apps (Slack's menubar, GTK file pickers, etc.).
 #   - qt6ct/qt5ct: Fusion widget style + a palette file rendered from
 #     colors.env, so Qt apps (cliphist picker, pavucontrol, …) match.
 #     KDE Frameworks apps stay un-themed on purpose; don't use them.
-adw-gtk3                              # GTK3 theme honouring libadwaita @define-color
+adw-gtk-theme                         # provides the adw-gtk3 + adw-gtk3-dark GTK themes
 matugen                               # Material You palette generator (wallpaper → colors)
 qt5ct                                 # Qt5 platform theme bridge
 qt6ct                                 # Qt6 platform theme bridge
@@ -74,6 +75,7 @@ nautilus             # GTK file manager (reads the adw-gtk3 + matugen colors)
 nautilus-python      # nautilus extension support
 nwg-displays         # GUI monitor configurator (helps build monitors.conf)
 imagemagick          # fallback wallpaper generation + image ops
+rsync                # used by apply.sh sync_dir (mirror with --delete)
 python               # for the claude_usage.py waybar widget
 
 # ── Flatpak apps (managed separately) ─────────────────────────────

@@ -29,12 +29,22 @@ for arg in "$@"; do
     esac
 done
 
-ALL_UTILITIES=(hypr hyprpaper kitty waybar mako wofi wlogout xsettingsd autostart applications theme)
+ALL_UTILITIES=(hypr kitty waybar mako wofi wlogout xsettingsd autostart applications theme)
 [[ ${#TARGETS[@]} -eq 0 ]] && TARGETS=("${ALL_UTILITIES[@]}")
 
 step() { printf "\n\033[1;35m▸ %s\033[0m\n" "$*"; }
 ok()   { printf "  \033[1;32m✓\033[0m %s\n" "$*"; }
 warn() { printf "  \033[1;33m!\033[0m %s\n" "$*"; }
+
+# restart_bg <name> [args...] — kill any running instance (exact name)
+# and relaunch it detached so it outlives this script. Used by the
+# daemon apply_* handlers (waybar, swaybg, xsettingsd, mako fallback).
+restart_bg() {
+    local name="$1"; shift
+    pkill -x "$name" 2>/dev/null || true
+    sleep 0.2
+    setsid -f "$name" "$@" >/dev/null 2>&1 || true
+}
 
 # ── sudo handling ───────────────────────────────────────────────────
 # yay/pacman/makepkg/chsh all call sudo, and --noconfirm doesn't help
@@ -160,8 +170,11 @@ generate_palette() {
         warn "matugen not installed — using committed theme/colors.env as-is"
         return 0
     }
-    # Sync the matugen config + templates first so matugen can find them.
+    # Sync the matugen config + templates first so matugen can find them,
+    # then point its output at this repo's absolute path (portable —
+    # works regardless of where the repo is cloned).
     sync_dir "$DOTFILES_DIR/matugen" "$HOME/.config/matugen"
+    sed -i "s|@DOTFILES@|$DOTFILES_DIR|g" "$HOME/.config/matugen/config.toml"
 
     local env_file="$DOTFILES_DIR/theme/colors.env"
     local backup; backup="$(mktemp)"
@@ -205,9 +218,17 @@ ensure_sddm_theme() {
     sudo install -m 644 "$rendered" "$dest/theme.conf"
     rm -f "$rendered"
 
-    # Blurred login background: reuse the desktop wallpaper if present.
-    if [[ -f "$HOME/.config/hypr/wallpapers/default.jpg" ]]; then
-        sudo install -m 644 "$HOME/.config/hypr/wallpapers/default.jpg" "$dest/background.jpg"
+    # Blurred login background generated from the desktop wallpaper, so
+    # the login screen matches the session (the original ask). We blur
+    # at install time with imagemagick — no QML GraphicalEffects dep.
+    local wp="$HOME/.config/hypr/wallpapers/default.png"
+    if [[ -f "$wp" ]] && command -v magick >/dev/null 2>&1; then
+        local bg; bg="$(mktemp --suffix=.png)"
+        magick "$wp" -resize 2560x -blur 0x18 -modulate 70 "$bg" 2>/dev/null \
+            && sudo install -m 644 "$bg" "$dest/background.png"
+        rm -f "$bg"
+    elif [[ -f "$wp" ]]; then
+        sudo install -m 644 "$wp" "$dest/background.png"   # unblurred fallback
     fi
 
     sudo mkdir -p /etc/sddm.conf.d
@@ -219,37 +240,63 @@ Current=dotfiles
     ok "sddm: installed self-contained 'dotfiles' theme (palette from colors.env)"
 }
 
-ensure_claude_usage_conf() {
-    # The waybar usage widget now queries /api/oauth/usage directly using
-    # the credential the CLI maintains in ~/.claude/.credentials.json,
-    # so no per-machine config is required. Kept as a no-op for legacy
-    # installs that may still source the stub.
-    return 0
-}
-
 ensure_default_wallpaper() {
-    # Install the repo's wallpaper to ~/.config/hypr/wallpapers/default.png.
-    # This single image is the theme's seed: hyprpaper shows it, SDDM
-    # blurs it on the login screen, and matugen derives the whole
-    # palette from it. Drop a different file in wallpapers/ + repoint
-    # this to reskin the entire desktop.
+    # Normalise the chosen wallpaper to ~/.config/hypr/wallpapers/default.png.
+    # This single PNG is the theme's seed: swaybg shows it, hyprlock and
+    # SDDM blur it, and matugen derives the whole palette from it.
+    #
+    # Source of truth = the first image in the repo's wallpapers/ dir
+    # (any format — jpg/png/webp/…). It's converted to real PNG so every
+    # consumer (swaybg/matugen/libpng) is happy regardless of input
+    # format. wallpapers/ is gitignored, so the wallpaper is a per-machine
+    # choice (like monitors.conf): drop your image there, run apply.
     local wp_dir="$HOME/.config/hypr/wallpapers"
+    local dest="$wp_dir/default.png"
     mkdir -p "$wp_dir"
-    local src; src="$(ls "$DOTFILES_DIR"/wallpapers/* 2>/dev/null | head -1)"
+
+    local src; src="$(find "$DOTFILES_DIR/wallpapers" -maxdepth 1 -type f \
+        ! -name '.gitkeep' 2>/dev/null | head -1)"
+
     if [[ -n "$src" ]]; then
-        install -m 644 "$src" "$wp_dir/default.png"
-    elif [[ ! -f "$wp_dir/default.png" ]] && command -v magick >/dev/null 2>&1; then
-        magick -size 3840x2160 gradient:'#11111b-#1e1e2e' "$wp_dir/default.png"
-        warn "no wallpaper in repo — generated a placeholder gradient"
+        if command -v magick >/dev/null 2>&1; then
+            magick "$src" "$dest"            # convert any format → PNG
+        elif command -v convert >/dev/null 2>&1; then
+            convert "$src" "$dest"
+        else
+            install -m 644 "$src" "$dest"    # last resort (assumes PNG)
+        fi
+        ok "wallpaper: $(basename "$src") → default.png"
+    elif [[ ! -f "$dest" ]]; then
+        if command -v magick >/dev/null 2>&1; then
+            magick -size 3840x2160 gradient:'#11111b-#1e1e2e' "$dest"
+            warn "no wallpaper in wallpapers/ — generated a placeholder gradient"
+        else
+            warn "no wallpaper in wallpapers/ and no imagemagick — set one manually at $dest"
+        fi
     fi
 }
 
 # ── per-utility handlers ────────────────────────────────────────────
+# sync_dir <src> <dest> [exclude ...]
+#
+# Mirrors src → dest with `rsync --delete`, so files removed from the
+# repo are ALSO removed from ~/.config (plain `cp -rT` left stale files
+# behind — e.g. an old hyprpaper.conf after we switched to swaybg).
+#
+# Generated files that live inside a synced dest but are NOT in the repo
+# (the wallpaper, matugen's colors.css) must be passed as excludes or
+# --delete would wipe them. Falls back to additive `cp -rT` if rsync is
+# somehow absent.
 sync_dir() {
-    # sync_dir <src> <dest>
-    local src="$1" dest="$2"
+    local src="$1" dest="$2"; shift 2
     mkdir -p "$dest"
-    cp -rT "$src" "$dest"
+    if command -v rsync >/dev/null 2>&1; then
+        local ex=() pat
+        for pat in "$@"; do ex+=("--exclude=$pat"); done
+        rsync -a --delete "${ex[@]}" "$src"/ "$dest"/
+    else
+        cp -rT "$src" "$dest"   # additive fallback: leaves stale files
+    fi
     render_tpl_files "$dest"
 }
 
@@ -262,7 +309,10 @@ sync_dir() {
 RENDER_SED_ARGS=()
 load_color_tokens() {
     [[ ${#RENDER_SED_ARGS[@]} -gt 0 ]] && return 0  # already cached
+    # Prefer the matugen-generated palette (gitignored); fall back to
+    # the committed neutral default on a fresh clone / before first run.
     local env_file="$DOTFILES_DIR/theme/colors.env"
+    [[ -f "$env_file" ]] || env_file="$DOTFILES_DIR/theme/colors.env.default"
     [[ -f "$env_file" ]] || return 0
     while IFS='=' read -r key value; do
         [[ "$key" =~ ^[A-Z_][A-Z0-9_]*$ ]] || continue
@@ -281,11 +331,18 @@ render_tpl_files() {
 }
 
 apply_hypr() {
-    sync_dir "$DOTFILES_DIR/hypr" "$HOME/.config/hypr"
+    # Exclude wallpapers/ — default.png is generated by ensure_default_wallpaper
+    # and lives under ~/.config/hypr/ but isn't tracked in the repo.
+    sync_dir "$DOTFILES_DIR/hypr" "$HOME/.config/hypr" wallpapers
     chmod +x "$HOME/.config/hypr/scripts/"*.sh 2>/dev/null || true
+    # hyprlock won't expand ~ in its background path — substitute @HOME@.
+    sed -i "s|@HOME@|$HOME|g" "$HOME/.config/hypr/hyprlock.conf" 2>/dev/null || true
     if pgrep -x Hyprland >/dev/null 2>&1; then
         hyprctl reload >/dev/null
         migrate_workspaces_to_rules
+        # (Re)start the wallpaper so a change shows without re-login.
+        command -v swaybg >/dev/null 2>&1 && \
+            restart_bg swaybg -i "$HOME/.config/hypr/wallpapers/default.png" -m fill
         ok "hypr: applied + reloaded"
     else
         ok "hypr: applied (no running session to reload)"
@@ -299,48 +356,22 @@ apply_hypr() {
 migrate_workspaces_to_rules() {
     command -v python3 >/dev/null 2>&1 || return 0
     python3 <<'PY' || true
-import re, subprocess
+import json, subprocess
 try:
-    rules = subprocess.check_output(["hyprctl", "workspacerules"], text=True, timeout=3)
+    rules = json.loads(subprocess.check_output(
+        ["hyprctl", "-j", "workspacerules"], text=True, timeout=3))
 except Exception:
     raise SystemExit(0)
-for block in re.split(r"Workspace rule ", rules):
-    block = block.strip()
-    if not block:
-        continue
-    head, _, body = block.partition("\n")
-    ws = head.split(":")[0].strip()
-    m = re.search(r"monitor:\s*(\S+)", body)
-    if not m:
-        continue
-    mon = m.group(1)
-    if mon in ("<unset>", ""):
-        continue
-    if not (ws.isdigit() or ws.startswith("special:")):
+for r in rules:
+    ws  = str(r.get("workspaceString", "")).strip()
+    mon = (r.get("monitor") or "").strip()
+    if not mon or not (ws.isdigit() or ws.startswith("special:")):
         continue
     subprocess.run(
         ["hyprctl", "dispatch", "moveworkspacetomonitor", ws, mon],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=3,
     )
 PY
-}
-
-apply_hyprpaper() {
-    sync_dir "$DOTFILES_DIR/hyprpaper" "$HOME/.config/hypr"  # config lives next to hyprland.conf
-    # hyprpaper does NOT expand ~ or $HOME in its config — paths must be
-    # absolute or it silently fails to preload (→ "Monitor has no target").
-    sed -i "s|@HOME@|$HOME|g" "$HOME/.config/hypr/hyprpaper.conf"
-    if pgrep -x hyprpaper >/dev/null 2>&1; then
-        pkill -x hyprpaper || true
-        sleep 0.2
-    fi
-    if pgrep -x Hyprland >/dev/null 2>&1; then
-        setsid -f hyprpaper >/dev/null 2>&1 || (hyprpaper >/dev/null 2>&1 &)
-        # Drive the wallpaper over IPC per-monitor (static config lines
-        # race against preload — see hypr/scripts/wallpaper.sh).
-        ( "$HOME/.config/hypr/scripts/wallpaper.sh" & ) 2>/dev/null || true
-    fi
-    ok "hyprpaper: applied"
 }
 
 apply_kitty() {
@@ -351,16 +382,15 @@ apply_kitty() {
 apply_waybar() {
     sync_dir "$DOTFILES_DIR/waybar" "$HOME/.config/waybar"
     chmod +x "$HOME/.config/waybar/scripts/"*.{py,sh} 2>/dev/null || true
-    pkill -x waybar 2>/dev/null || true
-    sleep 0.3
-    setsid -f waybar >/dev/null 2>&1 || (waybar >/dev/null 2>&1 &)
+    restart_bg waybar
     ok "waybar: applied + restarted"
 }
 
 apply_mako() {
     sync_dir "$DOTFILES_DIR/mako" "$HOME/.config/mako"
+    # Prefer a live reload (keeps the queue); restart only if that fails.
     if pgrep -x mako >/dev/null 2>&1; then
-        makoctl reload >/dev/null 2>&1 || { pkill -x mako; sleep 0.2; setsid -f mako >/dev/null 2>&1 || (mako >/dev/null 2>&1 &); }
+        makoctl reload >/dev/null 2>&1 || restart_bg mako
     fi
     ok "mako: applied"
 }
@@ -374,16 +404,10 @@ apply_wlogout() {
     sync_dir "$DOTFILES_DIR/wlogout" "$HOME/.config/wlogout"
     ok "wlogout: applied"
 }
-
-
 apply_xsettingsd() {
     sync_dir "$DOTFILES_DIR/xsettingsd" "$HOME/.config/xsettingsd"
-    if command -v xsettingsd >/dev/null 2>&1; then
-        pkill -x xsettingsd 2>/dev/null || true
-        sleep 0.2
-        setsid -f xsettingsd -c "$HOME/.config/xsettingsd/xsettingsd.conf" >/dev/null 2>&1 \
-            || (xsettingsd -c "$HOME/.config/xsettingsd/xsettingsd.conf" >/dev/null 2>&1 &)
-    fi
+    command -v xsettingsd >/dev/null 2>&1 && \
+        restart_bg xsettingsd -c "$HOME/.config/xsettingsd/xsettingsd.conf"
     ok "xsettingsd: applied"
 }
 
@@ -436,17 +460,23 @@ apply_applications() {
     fi
 }
 
-# GTK + minimal Qt theming + env. GTK is the primary theme target
-# (Nautilus, CopyQ's dialogs, portals); Qt apps get a Fusion-styled
-# the palette via qt6ct/qt5ct so CopyQ et al. render dark.
-# KDE Frameworks 6 apps stay un-themed on purpose — see packages.txt.
+# GTK + minimal Qt theming + env. GTK is the primary target (Nautilus,
+# file pickers, portals). Qt apps get a Fusion-styled palette via
+# qt6ct/qt5ct so they render dark too. KDE Frameworks 6 apps stay
+# un-themed on purpose — see packages.txt.
 apply_theme() {
     sync_dir "$DOTFILES_DIR/qt6ct"          "$HOME/.config/qt6ct"
     sync_dir "$DOTFILES_DIR/qt5ct"          "$HOME/.config/qt5ct"
-    sync_dir "$DOTFILES_DIR/gtk-3.0"        "$HOME/.config/gtk-3.0"
-    sync_dir "$DOTFILES_DIR/gtk-4.0"        "$HOME/.config/gtk-4.0"
+    # Exclude colors.css — matugen generates it into these dirs.
+    sync_dir "$DOTFILES_DIR/gtk-3.0"        "$HOME/.config/gtk-3.0" colors.css
+    sync_dir "$DOTFILES_DIR/gtk-4.0"        "$HOME/.config/gtk-4.0" colors.css
     sync_dir "$DOTFILES_DIR/environment.d"  "$HOME/.config/environment.d"
     sync_dir "$DOTFILES_DIR/matugen"        "$HOME/.config/matugen"
+    # Resolve the @DOTFILES@ placeholder in the deployed matugen config
+    # (generate_palette also does this before it runs matugen, but it
+    # re-syncs above, so substitute again to leave a clean resting state
+    # for any manual `matugen` invocation).
+    sed -i "s|@DOTFILES@|$DOTFILES_DIR|g" "$HOME/.config/matugen/config.toml" 2>/dev/null || true
     # (matugen palette generation happens once, up front, in
     # generate_palette — gtk-{3,4}.0/colors.css is produced there.)
 
@@ -486,7 +516,6 @@ fi
 ensure_screenshot_dir
 ensure_git_merge_driver
 ensure_default_wallpaper
-ensure_claude_usage_conf
 
 # Regenerate the palette from the wallpaper BEFORE rendering any
 # templates, so colors.env is fresh for the whole apply pass.
@@ -500,9 +529,9 @@ for util in "${TARGETS[@]}"; do
         continue
     fi
     # `theme` is a meta-handler that syncs multiple dirs (qt6ct/, qt5ct/,
-    # gtk-3.0/, gtk-4.0/, environment.d/, kde/) — there is no top-level
-    # theme/ dir. `applications` is similarly meta — it may have an
-    # applications/ dir or it may just do xdg-mime registrations.
+    # gtk-3.0/, gtk-4.0/, environment.d/, matugen/) — there is no
+    # top-level theme/ dir. `applications` is similarly meta — it may
+    # have an applications/ dir or just do xdg-mime registrations.
     if [[ "$util" != "theme" && "$util" != "applications" && ! -d "$DOTFILES_DIR/$util" ]]; then
         warn "$util: directory not found in repo, skipping"
         continue

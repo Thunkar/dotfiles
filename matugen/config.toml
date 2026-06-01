@@ -9,16 +9,19 @@
 #   2. ~/.config/gtk-{3,4}.0/colors.css — libadwaita @define-color block
 #      so GTK apps (Nautilus, file pickers) match too.
 #
-# The colors.env path points at the live repo so the generated palette
-# is the committed source of truth. Edit the WALLPAPER, not colors.env.
+# colors.env is regenerated into the repo's theme/ dir, but it is
+# gitignored (machine-derived output, like the wallpaper) — edit the
+# WALLPAPER to retheme, not colors.env. @DOTFILES@ is substituted to the
+# repo's absolute path by apply.sh (matugen has no notion of the repo
+# location, and its config can't read shell vars).
 
 [config]
 reload_apps = true
 
-# colors.env regenerated into the repo's theme/ dir.
+# colors.env regenerated into the repo's theme/ dir (gitignored).
 [templates.colorsenv]
 input_path  = "~/.config/matugen/templates/colors.env"
-output_path = "~/Repos/dotfiles/theme/colors.env"
+output_path = "@DOTFILES@/theme/colors.env"
 
 [templates.gtk3]
 input_path  = "~/.config/matugen/templates/gtk-colors.css"

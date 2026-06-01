@@ -3,3 +3,6 @@
 # Wallpaper is a per-machine choice (binary). Keep the dir, ignore images.
 wallpapers/*
 !wallpapers/.gitkeep
+
+# matugen-generated palette (machine-derived, like the wallpaper)
+theme/colors.env

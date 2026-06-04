@@ -155,10 +155,12 @@ window#waybar.empty #window {
     color: #@GREEN@;
 }
 
+/* Active = solid accent fill with dark text, so the coffee glyph stays
+ * legible regardless of how light/dark the accent token is. */
 #custom-caffeine.on {
-    color: #@YELLOW@;
-    background-color: rgba(@YELLOW_R@, @YELLOW_G@, @YELLOW_B@, 0.18);
-    border-color: rgba(@YELLOW_R@, @YELLOW_G@, @YELLOW_B@, 0.40);
+    color: #@CRUST@;
+    background-color: #@YELLOW@;
+    border-color: #@YELLOW@;
 }
 
 #custom-caffeine.off {

@@ -135,6 +135,21 @@ ensure_screenshot_dir() {
     mkdir -p "$HOME/Pictures/Screenshots"
 }
 
+# Keep Firefox as the default browser. Other browsers (Chromium) grab
+# the default on install; reset it here. Idempotent — only acts when
+# firefox is installed and isn't already the default.
+ensure_default_browser() {
+    command -v xdg-settings >/dev/null 2>&1 || return 0
+    [[ -f /usr/share/applications/firefox.desktop ]] || return 0
+    [[ "$(xdg-settings get default-web-browser 2>/dev/null)" == "firefox.desktop" ]] && return 0
+    xdg-settings set default-web-browser firefox.desktop 2>/dev/null || true
+    local s
+    for s in x-scheme-handler/http x-scheme-handler/https text/html; do
+        xdg-mime default firefox.desktop "$s" 2>/dev/null || true
+    done
+    ok "browser: default set to Firefox"
+}
+
 ensure_git_merge_driver() {
     # .gitattributes marks hypr/conf.d/10-monitors.conf as merge=ours so
     # `git merge upstream` keeps this machine's monitor layout. The
@@ -515,6 +530,7 @@ fi
 
 ensure_screenshot_dir
 ensure_git_merge_driver
+ensure_default_browser
 ensure_default_wallpaper
 
 # Regenerate the palette from the wallpaper BEFORE rendering any

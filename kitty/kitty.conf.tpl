@@ -34,46 +34,46 @@ tab_powerline_style slanted
 tab_title_template  "{index}: {title[:24]}"
 
 # ── Color palette ───────────────────────────────────────
-foreground              #@TEXT@
-background              #@BASE@
-selection_foreground    #@BASE@
-selection_background    #@ROSEWATER@
+foreground              #@FG@
+background              #@BG@
+selection_foreground    #@BG@
+selection_background    #@ACCENT@
 
-cursor                  #@ROSEWATER@
-cursor_text_color       #@BASE@
-url_color               #@ROSEWATER@
+cursor                  #@ACCENT@
+cursor_text_color       #@BG@
+url_color               #@ACCENT@
 
-active_border_color     #@MAUVE@
-inactive_border_color   #@OVERLAY0@
-bell_border_color       #@YELLOW@
+active_border_color     #@ACCENT@
+inactive_border_color   #@MUTED@
+bell_border_color       #@WARNING@
 
-active_tab_foreground   #@CRUST@
-active_tab_background   #@MAUVE@
-inactive_tab_foreground #@TEXT@
-inactive_tab_background #@MANTLE@
-tab_bar_background      #@CRUST@
+active_tab_foreground   #@BG_DEEP@
+active_tab_background   #@ACCENT@
+inactive_tab_foreground #@FG@
+inactive_tab_background #@BG_ALT@
+tab_bar_background      #@BG_DEEP@
 
 # black
 color0  #@SURFACE1@
 color8  #@SURFACE2@
 # red
-color1  #@RED@
-color9  #@RED@
+color1  #@ERROR@
+color9  #@ERROR@
 # green
-color2  #@GREEN@
-color10 #@GREEN@
+color2  #@SUCCESS@
+color10 #@SUCCESS@
 # yellow
-color3  #@YELLOW@
-color11 #@YELLOW@
+color3  #@WARNING@
+color11 #@WARNING@
 # blue
-color4  #@BLUE@
-color12 #@BLUE@
+color4  #@ACCENT_ALT@
+color12 #@ACCENT_ALT@
 # magenta
-color5  #@PINK@
-color13 #@PINK@
+color5  #@ACCENT_ALT@
+color13 #@ACCENT_ALT@
 # cyan
-color6  #@TEAL@
-color14 #@TEAL@
+color6  #@ACCENT_ALT@
+color14 #@ACCENT_ALT@
 # white
-color7  #@SUBTEXT1@
-color15 #@SUBTEXT0@
+color7  #@FG_DIM@
+color15 #@FG_FAINT@

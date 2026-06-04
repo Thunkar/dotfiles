@@ -6,8 +6,8 @@
 }
 
 window {
-    background-color: rgba(@BASE_R@, @BASE_G@, @BASE_B@, 0.85);
-    border: 2px solid #@MAUVE@;
+    background-color: rgba(@BG_R@, @BG_G@, @BG_B@, 0.85);
+    border: 2px solid #@ACCENT@;
     border-radius: 14px;
 }
 
@@ -17,12 +17,12 @@ window {
     border: none;
     border-radius: 10px;
     background-color: rgba(@SURFACE0_R@, @SURFACE0_G@, @SURFACE0_B@, 0.85);
-    color: #@TEXT@;
-    caret-color: #@MAUVE@;
+    color: #@FG@;
+    caret-color: #@ACCENT@;
 }
 
 #input image {
-    color: #@SUBTEXT0@;
+    color: #@FG_FAINT@;
 }
 
 #inner-box {
@@ -34,7 +34,7 @@ window {
 }
 
 #text {
-    color: #@TEXT@;
+    color: #@FG@;
     margin-left: 8px;
 }
 
@@ -49,8 +49,8 @@ window {
 }
 
 #entry:selected {
-    background-color: rgba(@MAUVE_R@, @MAUVE_G@, @MAUVE_B@, 0.20);
-    border: 1px solid #@MAUVE@;
+    background-color: rgba(@ACCENT_R@, @ACCENT_G@, @ACCENT_B@, 0.20);
+    border: 1px solid #@ACCENT@;
 }
 
 #entry:selected #text {

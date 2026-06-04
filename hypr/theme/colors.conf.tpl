@@ -1,33 +1,20 @@
-# Shared color tokens.
-# Used by hyprland borders, shadows, layout indicators.
+# Shared colour tokens for Hyprland (borders, shadows, indicators).
+# Generic semantic names; see theme/colors.env for the role each maps to.
 
-$rosewater = rgb(@ROSEWATER@)
-$flamingo  = rgb(@FLAMINGO@)
-$pink      = rgb(@PINK@)
-$mauve     = rgb(@MAUVE@)
-$red       = rgb(@RED@)
-$maroon    = rgb(@MAROON@)
-$peach     = rgb(@PEACH@)
-$yellow    = rgb(@YELLOW@)
-$green     = rgb(@GREEN@)
-$teal      = rgb(@TEAL@)
-$sky       = rgb(@SKY@)
-$sapphire  = rgb(@SAPPHIRE@)
-$blue      = rgb(@BLUE@)
-$lavender  = rgb(@LAVENDER@)
-
-$text      = rgb(@TEXT@)
-$subtext1  = rgb(@SUBTEXT1@)
-$subtext0  = rgb(@SUBTEXT0@)
-
-$overlay2  = rgb(@OVERLAY2@)
-$overlay1  = rgb(@OVERLAY1@)
-$overlay0  = rgb(@OVERLAY0@)
-
-$surface2  = rgb(@SURFACE2@)
-$surface1  = rgb(@SURFACE1@)
-$surface0  = rgb(@SURFACE0@)
-
-$base      = rgb(@BASE@)
-$mantle    = rgb(@MANTLE@)
-$crust     = rgb(@CRUST@)
+$bg           = rgb(@BG@)
+$bg_alt       = rgb(@BG_ALT@)
+$bg_deep      = rgb(@BG_DEEP@)
+$surface0     = rgb(@SURFACE0@)
+$surface1     = rgb(@SURFACE1@)
+$surface2     = rgb(@SURFACE2@)
+$fg           = rgb(@FG@)
+$fg_dim       = rgb(@FG_DIM@)
+$fg_faint     = rgb(@FG_FAINT@)
+$muted        = rgb(@MUTED@)
+$border       = rgb(@BORDER@)
+$accent       = rgb(@ACCENT@)
+$accent_dim   = rgb(@ACCENT_DIM@)
+$accent_alt   = rgb(@ACCENT_ALT@)
+$success      = rgb(@SUCCESS@)
+$warning      = rgb(@WARNING@)
+$error        = rgb(@ERROR@)

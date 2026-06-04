@@ -12,7 +12,7 @@
 
 window#waybar {
     background-color: transparent;
-    color: #@TEXT@;
+    color: #@FG@;
 }
 
 /* The three module-row containers stay transparent — only the pills show. */
@@ -36,12 +36,12 @@ window#waybar {
 #custom-caffeine,
 #custom-claude-usage,
 #custom-power {
-    background-color: rgba(@BASE_R@, @BASE_G@, @BASE_B@, 0.78);
-    border: 1px solid rgba(@MAUVE_R@, @MAUVE_G@, @MAUVE_B@, 0.16);
+    background-color: rgba(@BG_R@, @BG_G@, @BG_B@, 0.78);
+    border: 1px solid rgba(@ACCENT_R@, @ACCENT_G@, @ACCENT_B@, 0.16);
     border-radius: 999px;
     padding: 0 12px;
     margin: 3px 3px;
-    color: #@TEXT@;
+    color: #@FG@;
     transition: background-color 150ms ease, color 150ms ease;
 }
 
@@ -53,26 +53,26 @@ window#waybar {
 #workspaces button {
     padding: 0 8px;
     margin: 2px 1px;
-    color: #@OVERLAY0@;
+    color: #@MUTED@;
     background: transparent;
     border-radius: 999px;
     transition: all 150ms ease;
 }
 
 #workspaces button:hover {
-    color: #@TEXT@;
-    background: rgba(@MAUVE_R@, @MAUVE_G@, @MAUVE_B@, 0.18);
+    color: #@FG@;
+    background: rgba(@ACCENT_R@, @ACCENT_G@, @ACCENT_B@, 0.18);
 }
 
 #workspaces button.active {
-    color: #@CRUST@;
-    background-color: #@MAUVE@;
-    box-shadow: 0 0 6px rgba(@MAUVE_R@, @MAUVE_G@, @MAUVE_B@, 0.55);
+    color: #@BG_DEEP@;
+    background-color: #@ACCENT@;
+    box-shadow: 0 0 6px rgba(@ACCENT_R@, @ACCENT_G@, @ACCENT_B@, 0.55);
 }
 
 #workspaces button.urgent {
-    color: #@CRUST@;
-    background-color: #@RED@;
+    color: #@BG_DEEP@;
+    background-color: #@ERROR@;
 }
 
 /* ── wlr/taskbar (open apps in centre, one icon per window) ────── */
@@ -82,8 +82,8 @@ window#waybar {
  * only shows the windows on workspaces assigned to that monitor —
  * matching the odd/even-monitor split in hypr/conf.d/10-monitors.conf. */
 #taskbar {
-    background-color: rgba(@BASE_R@, @BASE_G@, @BASE_B@, 0.78);
-    border: 1px solid rgba(@MAUVE_R@, @MAUVE_G@, @MAUVE_B@, 0.16);
+    background-color: rgba(@BG_R@, @BG_G@, @BG_B@, 0.78);
+    border: 1px solid rgba(@ACCENT_R@, @ACCENT_G@, @ACCENT_B@, 0.16);
     border-radius: 999px;
     padding: 0 6px;
     margin: 3px 3px;
@@ -97,22 +97,22 @@ window#waybar {
     transition: background 150ms ease;
 }
 #taskbar button:hover {
-    background: rgba(@MAUVE_R@, @MAUVE_G@, @MAUVE_B@, 0.20);
+    background: rgba(@ACCENT_R@, @ACCENT_G@, @ACCENT_B@, 0.20);
 }
 #taskbar button.active {
-    background: rgba(@MAUVE_R@, @MAUVE_G@, @MAUVE_B@, 0.30);
+    background: rgba(@ACCENT_R@, @ACCENT_G@, @ACCENT_B@, 0.30);
 }
 
 /* ── Submap indicator (RESIZE / LAYOUTS) ───────────────────────── */
 #submap {
-    color: #@YELLOW@;
-    background-color: rgba(@YELLOW_R@, @YELLOW_G@, @YELLOW_B@, 0.14);
-    border-color: rgba(@YELLOW_R@, @YELLOW_G@, @YELLOW_B@, 0.30);
+    color: #@WARNING@;
+    background-color: rgba(@WARNING_R@, @WARNING_G@, @WARNING_B@, 0.14);
+    border-color: rgba(@WARNING_R@, @WARNING_G@, @WARNING_B@, 0.30);
 }
 
 /* ── Focused window title ──────────────────────────────────────── */
 #window {
-    color: #@SUBTEXT1@;
+    color: #@FG_DIM@;
     font-style: italic;
 }
 
@@ -123,69 +123,73 @@ window#waybar.empty #window {
 
 /* ── Right-cluster accent colors ───────────────────────────────── */
 #clock {
-    color: #@LAVENDER@;
+    color: #@ACCENT_DIM@;
 }
 
 #network {
-    color: #@TEAL@;
+    color: #@ACCENT_ALT@;
 }
 
 #bluetooth {
-    color: #@BLUE@;
+    color: #@ACCENT_ALT@;
 }
 
 #bluetooth.disabled,
 #bluetooth.off {
-    color: #@OVERLAY0@;
+    color: #@MUTED@;
 }
 
 #pulseaudio {
-    color: #@PINK@;
+    color: #@ACCENT_ALT@;
 }
 
 #pulseaudio.muted {
-    color: #@OVERLAY0@;
+    color: #@MUTED@;
+}
+
+/* Toggle pills share one grammar: ENGAGED/active = solid accent fill
+ * with dark text (legible regardless of how light the accent is);
+ * idle/off = a muted glyph, no fill. Notifications-on and caffeine-on
+ * are the "active" states. */
+#custom-mako.on {
+    color: #@BG_DEEP@;
+    background-color: #@SUCCESS@;
+    border-color: #@SUCCESS@;
 }
 
 #custom-mako.dnd {
-    color: #@OVERLAY0@;
+    color: #@MUTED@;
 }
 
-#custom-mako.on {
-    color: #@GREEN@;
-}
-
-/* Active = solid accent fill with dark text, so the coffee glyph stays
- * legible regardless of how light/dark the accent token is. */
 #custom-caffeine.on {
-    color: #@CRUST@;
-    background-color: #@YELLOW@;
-    border-color: #@YELLOW@;
+    color: #@BG_DEEP@;
+    background-color: #@WARNING@;
+    border-color: #@WARNING@;
 }
 
 #custom-caffeine.off {
-    color: #@OVERLAY0@;
+    color: #@MUTED@;
 }
 
 #custom-claude-usage.low {
-    color: #@GREEN@;
+    color: #@SUCCESS@;
 }
 
 #custom-claude-usage.medium {
-    color: #@YELLOW@;
+    color: #@WARNING@;
 }
 
 #custom-claude-usage.high {
-    color: #@RED@;
+    color: #@ERROR@;
 }
 
 #custom-claude-usage.error {
-    color: #@RED@;
+    color: #@ERROR@;
 }
 
 #tray menu {
-    background-color: rgba(@BASE_R@, @BASE_G@, @BASE_B@, 0.95);
-    color: #@TEXT@;
+    background-color: rgba(@BG_R@, @BG_G@, @BG_B@, 0.95);
+    color: #@FG@;
     border-radius: 10px;
     padding: 6px;
 }
@@ -193,14 +197,14 @@ window#waybar.empty #window {
 /* Power keeps its red tint but matches every other pill's metrics
  * (font-size, padding) so the bar's vertical baseline stays clean. */
 #custom-power {
-    color: #@RED@;
-    background-color: rgba(@RED_R@, @RED_G@, @RED_B@, 0.14);
-    border-color: rgba(@RED_R@, @RED_G@, @RED_B@, 0.32);
+    color: #@ERROR@;
+    background-color: rgba(@ERROR_R@, @ERROR_G@, @ERROR_B@, 0.14);
+    border-color: rgba(@ERROR_R@, @ERROR_G@, @ERROR_B@, 0.32);
 }
 
 #custom-power:hover {
-    color: #@CRUST@;
-    background-color: #@RED@;
+    color: #@BG_DEEP@;
+    background-color: #@ERROR@;
 }
 
 /* Single-glyph pills (caffeine, mako, power). Force them to the
@@ -224,12 +228,20 @@ window#waybar.empty #window {
     font-size: 21px;
 }
 
+/* Same story for the bell pair: bell-slash (U+F1F6, DND) renders a
+ * notch smaller than the plain bell (U+F0F3, notifications on), so the
+ * pill appeared to shrink when toggled off. Bump the DND glyph to match
+ * the active bell — the "on" size is the correct one. */
+#custom-mako.dnd {
+    font-size: 18px;
+}
+
 /* ── Tooltips ─────────────────────────────────────────────────── */
 tooltip {
-    background-color: rgba(@CRUST_R@, @CRUST_G@, @CRUST_B@, 0.95);
-    border: 1px solid rgba(@MAUVE_R@, @MAUVE_G@, @MAUVE_B@, 0.4);
+    background-color: rgba(@BG_DEEP_R@, @BG_DEEP_G@, @BG_DEEP_B@, 0.95);
+    border: 1px solid rgba(@ACCENT_R@, @ACCENT_G@, @ACCENT_B@, 0.4);
     border-radius: 10px;
-    color: #@TEXT@;
+    color: #@FG@;
 }
 
 tooltip label {

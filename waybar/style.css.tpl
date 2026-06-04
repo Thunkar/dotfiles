@@ -228,12 +228,23 @@ window#waybar.empty #window {
     font-size: 21px;
 }
 
-/* Same story for the bell pair: bell-slash (U+F1F6, DND) renders a
- * notch smaller than the plain bell (U+F0F3, notifications on), so the
- * pill appeared to shrink when toggled off. Bump the DND glyph to match
- * the active bell — the "on" size is the correct one. */
+/* The bell pair has mismatched glyph metrics: bell-slash (U+F1F6, DND)
+ * renders smaller AND wider than the plain bell (U+F0F3, on) on this
+ * font stack — so toggling DND shrank the icon yet stretched the pill.
+ * Fixes:
+ *   1. bump the DND glyph so its visible mark matches the active bell,
+ *      but cap it at 21px == caffeine, the bar's tallest glyph. Going
+ *      higher (22) makes its LINE HEIGHT exceed caffeine's, which grows
+ *      the whole bar and pushes the desktop down when DND toggles on.
+ *   2. pin #custom-mako to a constant width so the wider slash can't
+ *      grow the pill or shove its neighbours. */
+#custom-mako {
+    min-width: 28px;
+    padding: 0 6px;
+}
+
 #custom-mako.dnd {
-    font-size: 18px;
+    font-size: 21px;
 }
 
 /* ── Tooltips ─────────────────────────────────────────────────── */

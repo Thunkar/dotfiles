@@ -5,9 +5,10 @@ standard_dialogs=default
 style=Fusion
 color_scheme_path=@HOME@/.config/qt5ct/colors/palette.conf
 
-[Fonts]
-fixed=@Variant(\0\0\0@\0\0\0\x12\0J\0\x65\0t\0\x42\0r\0\x61\0i\0n\0s\0M\0o\0n\0o@&\0\0\0\0\0\0\xff\xff\xff\xff\x5\x1\0\x32\x10)
-general=@Variant(\0\0\0@\0\0\0\x10\0N\0o\0t\0o\0 \0S\0\x61\0n\0s@&\0\0\0\0\0\0\xff\xff\xff\xff\x5\x1\0\x32\x10)
+# NO [Fonts] section — see qt6ct/qt6ct.conf for the full reason: a
+# serialized QFont @Variant blob from an older Qt deserialises broken
+# under current Qt and makes Qt widgets render with no text. Let
+# fontconfig resolve fonts instead.
 
 [Interface]
 activate_item_on_single_click=1
@@ -25,5 +26,6 @@ underline_shortcut=1
 wheel_scroll_lines=3
 
 [Troubleshooting]
-force_raster_widgets=1
+# Keep OFF — see qt6ct/qt6ct.conf.
+force_raster_widgets=0
 ignored_applications=@Invalid()

@@ -150,6 +150,19 @@ ensure_default_browser() {
     ok "browser: default set to Firefox"
 }
 
+ensure_polkit_agent() {
+    # GUI apps that need root (Ventoy, partition tools, …) elevate via
+    # pkexec, which needs a polkit authentication agent running or the
+    # launch silently fails (pkexec falls back to a textual agent and
+    # dies with no controlling terminal). Run the hyprland-native agent
+    # as a systemd user service so it starts reliably with
+    # graphical-session.target under uwsm — an `exec-once` in hypr was
+    # unreliable and would die mid-session, leaving pkexec with no agent.
+    systemctl --user list-unit-files hyprpolkitagent.service >/dev/null 2>&1 || return 0
+    systemctl --user enable --now hyprpolkitagent.service >/dev/null 2>&1 \
+        && ok "polkit: hyprpolkitagent (user service) enabled" || true
+}
+
 ensure_git_merge_driver() {
     # .gitattributes marks hypr/conf.d/10-monitors.conf as merge=ours so
     # `git merge upstream` keeps this machine's monitor layout. The
@@ -531,6 +544,7 @@ fi
 ensure_screenshot_dir
 ensure_git_merge_driver
 ensure_default_browser
+ensure_polkit_agent
 ensure_default_wallpaper
 
 # Regenerate the palette from the wallpaper BEFORE rendering any

@@ -8,10 +8,14 @@ hyprshot
 hyprpolkitagent
 hypridle             # idle daemon (auto-lock, DPMS, suspend)
 hyprlock             # lock screen
-polkit-kde-agent     # graphical sudo prompts for GUI apps (referenced by hypr autostart)
 xdg-desktop-portal-hyprland
 xdg-desktop-portal-gtk     # native file-chooser portal for Electron/Chromium
 xsettingsd                 # broadcasts gsettings → XSettings for XWayland apps
+xorg-xhost                 # lets root GUI tools reach XWayland: gparted's
+                           # launcher runs `xhost +SI:localuser:root` so
+                           # gpartedbin (run as root via pkexec) can open
+                           # the display. Without it gparted auths then
+                           # silently fails to appear.
 
 # ── Bar / launcher / notifications ─────────────────────────────────
 waybar

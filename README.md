@@ -10,7 +10,7 @@ login screen, GTK + Qt apps) recolours to match it via
 ```sh
 git clone <your-fork> ~/Repos/dotfiles
 cd ~/Repos/dotfiles
-./apply.sh                 # installs packages (yay), deploys configs, themes
+./apply.sh                 # installs packages (pacman + AUR whitelist), deploys configs, themes
 ```
 
 `./apply.sh` is idempotent — re-run it any time. Flags:
@@ -88,8 +88,20 @@ wallpapers/<your image>
 
 ## Adding software
 
-- **Repo/AUR packages:** add to `packages.txt` (one per line), `./apply.sh`.
+Packages are split by trust, to limit exposure to AUR supply-chain attacks:
+
+- **Repo packages → `packages.txt`** (one per line). Installed with plain
+  `pacman` from the signed binary repos; **never built**. Must resolve via
+  `pacman -Si <pkg>` — if it doesn't, `apply.sh` reports and skips it rather
+  than silently building from the AUR.
+- **AUR packages → `aur.txt`** (the build whitelist). The *only* names
+  `apply.sh` will build via `yay`. Read the PKGBUILD first; keep the list
+  short. Review diffs while building with `REVIEW_AUR=1 ./apply.sh`.
 - **Flatpaks:** add the app ID to `flatpak.txt`, `./apply.sh`.
+
+> Prefer the repo version of anything available there (e.g. CachyOS ships
+> many AUR-ish `-git` packages as prebuilt signed binaries) — only put a
+> name in `aur.txt` when no repo provides it.
 
 ## Components
 

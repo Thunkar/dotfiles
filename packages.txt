@@ -1,4 +1,10 @@
-# Packages required by this dotfiles repo. Installed by apply.sh via yay.
+# REPO-ONLY packages required by this dotfiles repo. Installed by apply.sh
+# with plain `pacman` from the configured signed binary repos — never
+# built. Any entry here that isn't found in a repo is reported and skipped
+# (apply.sh will NOT fall back to building it from the AUR).
+#
+# AUR packages live in aur.txt (the explicit build whitelist). Before
+# adding a name here, it must resolve via `pacman -Si <pkg>`.
 # Comments and blank lines are ignored.
 
 # ── Compositor ─────────────────────────────────────────────────────
@@ -49,7 +55,7 @@ nm-connection-editor # GUI for NM profiles (right-click on waybar network pill)
 bluez                # bluetooth stack
 bluez-utils          # bluetoothctl
 blueman              # full GTK manager (right-click on bt pill)
-bluetuith            # TUI manager used by the waybar bluetooth popup
+# bluetuith → AUR-only, see aur.txt
 
 # ── Fonts / icons ──────────────────────────────────────────────────
 ttf-jetbrains-mono-nerd
@@ -74,7 +80,7 @@ qt5ct                                 # Qt5 platform theme bridge
 qt6ct                                 # Qt6 platform theme bridge
 
 # ── Utilities ──────────────────────────────────────────────────────
-hdrop-git            # dropdown terminal helper (AUR; declared makedeps are incomplete — see BUILD_DEPS in apply.sh)
+# hdrop-git → AUR-only, see aur.txt
 nautilus             # GTK file manager (reads the adw-gtk3 + matugen colors)
 nautilus-python      # nautilus extension support
 nwg-displays         # GUI monitor configurator (helps build monitors.conf)

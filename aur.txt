@@ -1,0 +1,25 @@
+# AUR WHITELIST — the ONLY packages apply.sh will build from the AUR.
+#
+# Everything else lives in packages.txt and is installed as a signed
+# binary via pacman (never built). This split exists because building an
+# AUR package runs that package's PKGBUILD as code on your machine — the
+# exact vector abused by the June 2026 "Atomic Arch" supply-chain attack,
+# where ~1,600 orphaned AUR packages had their PKGBUILDs poisoned.
+#
+# RULES for adding an entry here:
+#   1. Confirm it isn't already in a repo:   pacman -Si <pkg>
+#      If it is, put it in packages.txt instead — never build what you can
+#      install as a signed binary.
+#   2. Read the PKGBUILD (and .install hooks) before adding it.
+#   3. Keep this list as short as possible. Each line is a trust decision.
+#
+# Build with PKGBUILD review:   REVIEW_AUR=1 ./apply.sh
+# Comments and blank lines are ignored.
+
+# ── Bluetooth ──────────────────────────────────────────────────────
+bluetuith            # TUI bluetooth manager used by the waybar bt popup
+                     # (AUR-only; no binary repo package exists)
+
+# ── Utilities ──────────────────────────────────────────────────────
+hdrop-git            # dropdown terminal helper (AUR-only). Declared
+                     # makedeps are incomplete — see BUILD_DEPS in apply.sh.

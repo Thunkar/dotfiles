@@ -1,11 +1,20 @@
 #!/usr/bin/env bash
-# apply.sh — install dependencies via yay, copy configs to ~/.config,
+# apply.sh — install dependencies, copy configs to ~/.config,
 # and reload running services.
+#
+# Package policy (hardened against AUR supply-chain attacks):
+#   - packages.txt  is REPO-ONLY. Every entry is installed with plain
+#                   `pacman` from a signed binary repo and is NEVER built.
+#   - aur.txt       is the AUR WHITELIST: the only package names this
+#                   script will ever build from the AUR via `yay`. Keep it
+#                   as small as possible and review each PKGBUILD.
+# Any packages.txt entry that isn't in a configured repo is reported and
+# skipped — we refuse to silently fall back to building it from the AUR.
 #
 # Usage:
 #   ./apply.sh                  # install deps + apply every utility
 #   ./apply.sh hypr waybar      # apply only the listed utilities
-#   ./apply.sh --no-install …   # skip dep install / yay bootstrap
+#   ./apply.sh --no-install …   # skip dep install / AUR build
 #
 # Environment:
 #   CLAUDE_PLAN=pro|max5|max20  exposed to waybar's claude-usage widget
@@ -75,15 +84,52 @@ bootstrap_yay() {
 }
 
 # AUR packages with broken PKGBUILDs sometimes invoke build tools they
-# never declared. Install these unconditionally before the main pass so
-# yay-driven makepkg never trips over a missing binary.
+# never declared. Install these before the AUR pass so makepkg never
+# trips over a missing binary.
 BUILD_DEPS=(scdoc)
 
+# Install everything declared in packages.txt straight from the configured
+# binary repos with pacman — no AUR, no building. The safety gate below
+# refuses to install any entry that isn't in a repo (it could be a name an
+# attacker squats in the AUR); such entries are reported and left out.
 install_packages() {
     [[ -f "$DOTFILES_DIR/packages.txt" ]] || return 0
     local pkgs
     mapfile -t pkgs < <(grep -vE '^\s*(#|$)' "$DOTFILES_DIR/packages.txt" | awk '{print $1}')
     [[ ${#pkgs[@]} -eq 0 ]] && return 0
+
+    # Refresh sync DBs so the repo-availability check is accurate.
+    step "refreshing pacman databases"
+    sudo pacman -Sy --noconfirm >/dev/null
+
+    local install=() missing=() p
+    for p in "${pkgs[@]}"; do
+        if pacman -Si "$p" >/dev/null 2>&1; then install+=("$p"); else missing+=("$p"); fi
+    done
+
+    if (( ${#missing[@]} )); then
+        warn "${#missing[@]} packages.txt entr(y/ies) are NOT in any configured repo — skipping (will NOT build from AUR):"
+        printf '         - %s\n' "${missing[@]}" >&2
+        warn "if one genuinely belongs in the AUR, review its PKGBUILD and add it to aur.txt"
+    fi
+
+    [[ ${#install[@]} -eq 0 ]] && { warn "no repo packages to install"; return 0; }
+    step "installing/updating ${#install[@]} repo packages via pacman (no AUR)"
+    sudo pacman -S --needed --noconfirm "${install[@]}"
+    ok "repo packages OK"
+}
+
+# Build the AUR whitelist (aur.txt) via yay — the ONLY place this script
+# is allowed to run upstream PKGBUILDs. `--aur` forces every target to be
+# treated as an AUR package (never a same-named repo package), so the
+# whitelist file is the entire trust boundary. Keep it tiny and audited.
+install_aur() {
+    [[ -f "$DOTFILES_DIR/aur.txt" ]] || return 0
+    local pkgs
+    mapfile -t pkgs < <(grep -vE '^\s*(#|$)' "$DOTFILES_DIR/aur.txt" | awk '{print $1}')
+    [[ ${#pkgs[@]} -eq 0 ]] && return 0
+
+    bootstrap_yay
 
     step "ensuring AUR build tools: ${BUILD_DEPS[*]}"
     sudo pacman -S --needed --noconfirm "${BUILD_DEPS[@]}"
@@ -92,13 +138,16 @@ install_packages() {
     # rebuilds from a clean tree (avoids "existing $srcdir/ tree" gotchas).
     rm -rf "$HOME/.cache/yay/hdrop-git/src" 2>/dev/null || true
 
-    step "installing/updating ${#pkgs[@]} packages via yay"
-    # --answerclean / --answerdiff suppress the interactive build prompts
-    # for AUR packages that have already been built locally.
-    yay -S --needed --noconfirm \
-        --answerclean N --answerdiff N --removemake \
+    warn "building ${#pkgs[@]} package(s) FROM THE AUR (whitelist): ${pkgs[*]}"
+    warn "set REVIEW_AUR=1 to inspect each PKGBUILD/diff before building"
+    local diff_ans="N"
+    [[ -n "${REVIEW_AUR:-}" ]] && diff_ans="All"
+    # --answerclean / --answerdiff drive the build prompts; with REVIEW_AUR
+    # set, yay shows the full PKGBUILD diff for each package first.
+    yay -S --aur --needed --noconfirm \
+        --answerclean N --answerdiff "$diff_ans" --removemake \
         "${pkgs[@]}"
-    ok "packages OK"
+    ok "AUR whitelist OK"
 }
 
 # Flatpak app management. flatpak.txt is one app ID per line, comments
@@ -533,8 +582,8 @@ apply_theme() {
 # ── run ─────────────────────────────────────────────────────────────
 if (( DO_INSTALL )); then
     prime_sudo
-    bootstrap_yay
-    install_packages
+    install_packages          # repo-only, via pacman
+    install_aur               # AUR whitelist (aur.txt), via yay; bootstraps yay if needed
     install_flatpaks
     ensure_zsh_login_shell
     ensure_bluetooth_service

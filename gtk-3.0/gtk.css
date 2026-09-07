@@ -1,4 +1,4 @@
 /* Imports the matugen-generated palette overrides. apply.sh's
- * run_matugen step regenerates ~/.config/gtk-{3,4}.0/colors.css from
- * the ACCENT in theme/colors.env. */
+ * generate_palette step regenerates ~/.config/gtk-{3,4}.0/colors.css
+ * from the wallpaper (see matugen/templates/gtk-colors.css). */
 @import "colors.css";

@@ -3,6 +3,13 @@
 // just QtQuick + QtQuick.Controls so it works on a bare Qt6 install.
 //
 // All colors/fonts come from theme.conf (rendered from theme/colors.env).
+//
+// Multi-monitor: SDDM instantiates this file once per screen and gives
+// keyboard focus to the window on the *primary* screen (which the theme's
+// Xsetup script points at the Hyprland primary output). Only that instance
+// draws the clock, login card and power buttons; the others show just the
+// blurred wallpaper. Without this every screen had its own password field
+// and the visible one was not the one receiving keystrokes.
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -24,6 +31,10 @@ Rectangle {
     property color cCrust:    config.ColorCrust
     property string fontFamily: config.Font
     property int    fontSize:   parseInt(config.FontSize)
+
+    // `primaryScreen` is a context property set by SDDM per view. Fall back
+    // to "yes" if it is ever missing so a login is always possible.
+    readonly property bool isMain: (typeof primaryScreen === "undefined") ? true : primaryScreen
 
     // ── Live clock ───────────────────────────────────────────────
     function pad(n) { return n < 10 ? "0" + n : "" + n }
@@ -60,6 +71,7 @@ Rectangle {
     ColumnLayout {
         anchors.centerIn: parent
         spacing: 28
+        visible: root.isMain
 
         // Clock
         Label {
@@ -116,7 +128,7 @@ Rectangle {
                     placeholderTextColor: root.cOverlay
                     font.family: root.fontFamily
                     font.pixelSize: root.fontSize
-                    focus: true
+                    focus: root.isMain
                     leftPadding: 14
                     rightPadding: 14
                     topPadding: 12
@@ -175,6 +187,7 @@ Rectangle {
         anchors.bottom: parent.bottom
         anchors.margins: 28
         spacing: 18
+        visible: root.isMain
 
         Button {
             text: "⏻"
@@ -214,5 +227,13 @@ Rectangle {
         }
     }
 
-    Component.onCompleted: pw.forceActiveFocus()
+    Timer {
+        interval: 300; running: root.isMain; repeat: false
+        onTriggered: {
+            if (root.Window.window) root.Window.window.requestActivate()
+            pw.forceActiveFocus()
+        }
+    }
+
+    Component.onCompleted: if (root.isMain) pw.forceActiveFocus()
 }

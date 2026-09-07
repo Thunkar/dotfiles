@@ -1,60 +1,54 @@
 # REPO-ONLY packages required by this dotfiles repo. Installed by apply.sh
-# with plain `pacman` from the configured signed binary repos — never
-# built. Any entry here that isn't found in a repo is reported and skipped
-# (apply.sh will NOT fall back to building it from the AUR).
+# with plain `pacman` from the configured signed binary repos — never built.
+# Any entry not found in a repo is reported and skipped (apply.sh will NOT
+# fall back to building it from the AUR). AUR packages live in aur.txt.
 #
-# AUR packages live in aur.txt (the explicit build whitelist). Before
-# adding a name here, it must resolve via `pacman -Si <pkg>`.
-# Comments and blank lines are ignored.
+# Before adding a name here it must resolve via `pacman -Si <pkg>`.
+# Comments and blank lines are ignored; only the first word of a line counts.
 
-# ── Compositor ─────────────────────────────────────────────────────
+# ── Compositor & session ───────────────────────────────────────────
 hyprland
-swaybg               # wallpaper (native, reliable; replaced hyprpaper)
-hyprshot
-hyprpolkitagent
-hypridle             # idle daemon (auto-lock, DPMS, suspend)
-hyprlock             # lock screen
+uwsm                       # launches Hyprland as a systemd session (SDDM entry "Hyprland (uwsm)");
+                           # the session daemons below are user units bound to it
+swaybg                     # wallpaper (swaybg.service)
+hyprpolkitagent            # polkit auth dialogs (hyprpolkitagent.service)
+hypridle                   # idle daemon: auto-lock, DPMS, suspend (hypridle.service)
+hyprlock                   # lock screen
 xdg-desktop-portal-hyprland
 xdg-desktop-portal-gtk     # native file-chooser portal for Electron/Chromium
-xsettingsd                 # broadcasts gsettings → XSettings for XWayland apps
-xorg-xhost                 # lets root GUI tools reach XWayland: gparted's
-                           # launcher runs `xhost +SI:localuser:root` so
-                           # gpartedbin (run as root via pkexec) can open
-                           # the display. Without it gparted auths then
-                           # silently fails to appear.
+xsettingsd                 # broadcasts theme/font settings to XWayland apps (xsettingsd.service)
+xorg-xhost                 # lets root GUI tools reach XWayland: gparted's launcher runs
+                           # `xhost +SI:localuser:root` so gpartedbin (via pkexec) can open
 
 # ── Bar / launcher / notifications ─────────────────────────────────
-waybar
+waybar                     # waybar.service
 wofi
-wlogout              # logout / power menu launched from waybar's power pill
-mako
-cliphist             # Wayland clipboard manager (text + images), picker via wofi
-wl-clipboard         # wl-copy / wl-paste — what cliphist + screenshots use
+wlogout                    # power menu (SUPER+M, waybar power pill)
+mako                       # notifications (mako.service, D-Bus activated)
+cliphist                   # clipboard history (cliphist.service); wofi picker on SUPER+V
+wl-clipboard               # wl-copy / wl-paste — used by cliphist + screenshots
 
 # ── Terminal & shell ───────────────────────────────────────────────
 kitty
 zsh
 
-# ── Screenshots / clipboard ────────────────────────────────────────
-grimblast-git
+# ── Screenshots ────────────────────────────────────────────────────
 grim
 slurp
-satty                # screenshot annotation editor (Wayland-native)
-wl-clipboard
+satty                      # annotation editor (ALT+SHIFT+5)
 
 # ── Media / system control ─────────────────────────────────────────
 playerctl
 brightnessctl
 pavucontrol
-pulsemixer           # minimalist TUI mixer used by the waybar audio popup
-nm-connection-editor # GUI for NM profiles (right-click on waybar network pill)
-                     # NOTE: we do NOT install network-manager-applet — the tray
-                     # applet would duplicate the waybar network module.
+pulsemixer                 # TUI mixer behind the waybar audio popup
+nm-connection-editor       # GUI for NM profiles (right-click the waybar network pill).
+                           # NOT network-manager-applet — its tray icon would duplicate the module.
 
 # ── Bluetooth ──────────────────────────────────────────────────────
-bluez                # bluetooth stack
-bluez-utils          # bluetoothctl
-blueman              # full GTK manager (right-click on bt pill)
+bluez
+bluez-utils                # bluetoothctl
+blueman                    # full GTK manager (right-click the bt pill)
 # bluetuith → AUR-only, see aur.txt
 
 # ── Fonts / icons ──────────────────────────────────────────────────
@@ -65,31 +59,27 @@ noto-fonts-emoji
 papirus-icon-theme
 
 # ── Theming ────────────────────────────────────────────────────────
-# Wallpaper-driven via matugen: it extracts a Material You palette from
-# ~/.config/hypr/wallpapers/default.png and regenerates theme/colors.env
-# (→ every .tpl in the repo) plus the GTK libadwaita colors.css.
-#   - adw-gtk-theme: provides the adw-gtk3/adw-gtk3-dark GTK3 themes
-#     that honour libadwaita @define-color, so the matugen colors.css
-#     applies to GTK3 apps (Slack's menubar, GTK file pickers, etc.).
-#   - qt6ct/qt5ct: Fusion widget style + a palette file rendered from
-#     colors.env, so Qt apps (cliphist picker, pavucontrol, …) match.
-#     KDE Frameworks apps stay un-themed on purpose; don't use them.
-adw-gtk-theme                         # provides the adw-gtk3 + adw-gtk3-dark GTK themes
-matugen                               # Material You palette generator (wallpaper → colors)
-qt5ct                                 # Qt5 platform theme bridge
-qt6ct                                 # Qt6 platform theme bridge
+# Wallpaper-driven via matugen: a Material You palette is extracted from
+# ~/.config/hypr/wallpapers/default.png into theme/colors.env (→ every .tpl)
+# plus the GTK libadwaita colors.css. KDE Frameworks apps stay un-themed on
+# purpose; use the GTK equivalents.
+adw-gtk-theme              # adw-gtk3 / adw-gtk3-dark GTK3 themes honouring libadwaita @define-color
+matugen                    # palette generator
+qt5ct                      # Qt5 platform theme bridge (Fusion + our palette)
+qt6ct                      # Qt6 platform theme bridge
 
 # ── Utilities ──────────────────────────────────────────────────────
-# hdrop-git → AUR-only, see aur.txt
-nautilus             # GTK file manager (reads the adw-gtk3 + matugen colors)
-nautilus-python      # nautilus extension support
-nwg-displays         # GUI monitor configurator (helps build monitors.conf)
-imagemagick          # fallback wallpaper generation + image ops
-rsync                # used by apply.sh sync_dir (mirror with --delete)
-python               # for the claude_usage.py waybar widget
+nautilus                   # GTK file manager (SUPER+E)
+nautilus-python            # nautilus extension support
+nwg-displays               # GUI monitor configurator — helps write hypr/conf/monitors.lua
+imagemagick                # wallpaper normalisation + SDDM background blur
+rsync                      # apply.sh sync_dir (mirror with --delete)
+jq                         # hyprctl JSON in scripts (cheatsheet, screenshots, apply.sh)
+python                     # waybar claude_usage.py widget
+xorg-xrandr                # SDDM Xsetup: marks the primary output for the login prompt
+base-devel                 # makepkg, for the pinned AUR builds in aur.txt
+git
 
 # ── Flatpak apps (managed separately) ─────────────────────────────
-# Apps shipped as Flatpak live in flatpak.txt (one app ID per line).
-# apply.sh's install_flatpaks step installs them at --user scope and
-# keeps them updated. apply.sh's URL-scheme registration prefers the
-# flatpak variant when both are present (e.g. PrusaSlicer).
+# Apps shipped as Flatpak live in flatpak.txt (one app ID per line);
+# apply.sh installs/updates them user-scoped.

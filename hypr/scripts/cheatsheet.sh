@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# Build a keybind cheatsheet by parsing `# @cheat: <category> | <desc>`
-# trailing comments from the hypr config and showing them in a floating
-# kitty window (matched by the `hypr-cheatsheet` window rule).
+# Keybind cheatsheet, generated from the running compositor.
+#
+# Every bind declared with a description of the form "category | text"
+# (see conf/keybinds.lua) is read back via `hyprctl binds -j`, grouped by
+# category in declaration order, and shown in a floating kitty window
+# (matched by the hypr-cheatsheet window rule). No config parsing involved.
 set -euo pipefail
 
-CONF_DIR="${HOME}/.config/hypr/conf.d"
-
 # Toggle: if a cheatsheet window is already open, close it instead.
-if hyprctl -j clients | grep -q '"class": "hypr-cheatsheet"'; then
+if hyprctl -j clients | jq -e 'any(.[]; .class == "hypr-cheatsheet")' >/dev/null; then
     hyprctl dispatch closewindow class:hypr-cheatsheet
     exit 0
 fi
@@ -19,54 +20,44 @@ trap 'rm -f "$tmp"' EXIT
     printf "  HYPR  •  KEYBIND CHEATSHEET\n"
     printf "  ─────────────────────────────────────────────────────────────\n\n"
 
-    # Parse:  bind = MOD, KEY, action ... # @cheat: category | description
-    # Group by category, preserve declaration order within a category.
-    awk -F'@cheat:' '
-        /^[ \t]*bind[a-z]*[ \t]*=.*@cheat:/ {
-            # Left side: bind = ... (keep MOD, KEY)
-            left = $1
-            # Right side: " category | description"
-            right = $2
-            sub(/^[ \t]+/, "", right)
-            split(right, p, "|")
-            cat  = p[1]; sub(/[ \t]+$/, "", cat); sub(/^[ \t]+/, "", cat)
-            desc = p[2]; sub(/^[ \t]+/, "", desc); sub(/[ \t]+$/, "", desc)
-
-            # Extract keys: text between first "=" and the action
-            # e.g. "bind = $mainMod, Q, exec, kitty" -> "$mainMod + Q"
-            n = split(left, fields, ",")
-            # fields[1] = "bind = $mainMod" (or similar)
-            mod = fields[1]; sub(/^[^=]*=[ \t]*/, "", mod); sub(/[ \t]+$/, "", mod)
-            key = fields[2]; sub(/^[ \t]+/, "", key); sub(/[ \t]+$/, "", key)
-            if (mod == "" || mod == " ") combo = key
-            else combo = mod " + " key
-            gsub(/\$mainMod/, "SUPER", combo)
-            gsub(/SHIFT/, "Shift", combo)
-            gsub(/ALT/, "Alt",   combo)
-            gsub(/CTRL/, "Ctrl", combo)
-
-            order[cat]++
-            entries[cat, order[cat], "key"]  = combo
-            entries[cat, order[cat], "desc"] = desc
-            if (!(cat in seen)) { seen[cat]=1; cats[++ncats]=cat }
+    # jq: decode the modifier bitmask, emit "category<TAB>combo<TAB>text".
+    hyprctl -j binds | jq -r '
+        def bit($b): ((.modmask / $b) | floor) % 2 == 1;
+        .[]
+        | select(.has_description and (.description | contains(" | ")))
+        | (.description | split(" | ")) as $d
+        | ([ (if bit(64) then "SUPER" else empty end),
+             (if bit(4)  then "Ctrl"  else empty end),
+             (if bit(8)  then "Alt"   else empty end),
+             (if bit(1)  then "Shift" else empty end),
+             .key ] | join(" + ")) as $combo
+        | [$d[0], $combo, $d[1]] | @tsv' \
+    | awk -F'\t' '
+        {
+            if (!($1 in seen)) { seen[$1] = 1; cats[++n] = $1 }
+            count[$1]++
+            key[$1, count[$1]]  = $2
+            desc[$1, count[$1]] = $3
         }
         END {
-            for (i = 1; i <= ncats; i++) {
+            if (n == 0) {
+                print "  No described binds found. Is Hyprland running the Lua config yet?"
+                print "  (log out and back in after migrating from hyprland.conf)"
+                exit
+            }
+            for (i = 1; i <= n; i++) {
                 c = cats[i]
                 printf "  ▸ %s\n", toupper(c)
-                for (j = 1; j <= order[c]; j++) {
-                    printf "      %-28s  %s\n", entries[c,j,"key"], entries[c,j,"desc"]
-                }
+                for (j = 1; j <= count[c]; j++)
+                    printf "      %-28s  %s\n", key[c, j], desc[c, j]
                 printf "\n"
             }
-        }
-    ' "$CONF_DIR"/*.conf
+        }'
 
     printf "  ─────────────────────────────────────────────────────────────\n"
-    printf "  Press q or Esc to close.\n"
+    printf "  Press q to close.\n"
 } > "$tmp"
 
-# Spawn kitty with the matching class (window rule centers and sizes it).
 exec kitty \
     --class hypr-cheatsheet \
     --title "Hypr cheatsheet" \

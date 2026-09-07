@@ -1,25 +1,24 @@
-# AUR WHITELIST — the ONLY packages apply.sh will build from the AUR.
+# AUR WHITELIST — the ONLY packages apply.sh will build from the AUR, each
+# pinned to a reviewed commit of its AUR git repo.
 #
-# Everything else lives in packages.txt and is installed as a signed
-# binary via pacman (never built). This split exists because building an
-# AUR package runs that package's PKGBUILD as code on your machine — the
-# exact vector abused by the June 2026 "Atomic Arch" supply-chain attack,
-# where ~1,600 orphaned AUR packages had their PKGBUILDs poisoned.
+#   Format:  <package> <40-hex AUR git commit>      (trailing comments OK)
 #
-# RULES for adding an entry here:
-#   1. Confirm it isn't already in a repo:   pacman -Si <pkg>
-#      If it is, put it in packages.txt instead — never build what you can
-#      install as a signed binary.
-#   2. Read the PKGBUILD (and .install hooks) before adding it.
-#   3. Keep this list as short as possible. Each line is a trust decision.
+# Everything else lives in packages.txt and is installed as a signed binary
+# via pacman. Building an AUR package runs its PKGBUILD as code on your
+# machine — the vector abused in the June 2026 "Atomic Arch" attack, where
+# ~1,600 orphaned AUR packages had their PKGBUILDs poisoned. Pinning means
+# apply.sh checks out exactly the commit you read and refuses to build if
+# that commit has vanished from the AUR history; an AUR helper would happily
+# build whatever is at HEAD today.
 #
-# Build with PKGBUILD review:   REVIEW_AUR=1 ./apply.sh
-# Comments and blank lines are ignored.
+# Adding or updating an entry:
+#   1. Is it in a repo?  pacman -Si <pkg>   → then it goes in packages.txt.
+#   2. ./aur-review.sh <pkg>   — shows history, diff since your pin, PKGBUILD.
+#   3. Paste the "<pkg> <commit>" line it prints here. Re-run ./apply.sh.
+# Unpinned entries are skipped with a warning, never built.
 
 # ── Bluetooth ──────────────────────────────────────────────────────
-bluetuith            # TUI bluetooth manager used by the waybar bt popup
-                     # (AUR-only; no binary repo package exists)
-
-# ── Utilities ──────────────────────────────────────────────────────
-hdrop-git            # dropdown terminal helper (AUR-only). Declared
-                     # makedeps are incomplete — see BUILD_DEPS in apply.sh.
+# TUI bluetooth manager used by the waybar bt popup (no repo package exists).
+# Reviewed 2026-09-07: maintainer dpeukert, builds github.com/bluetuith-org/bluetuith
+# tag v0.2.7 from a b2sum-verified checkout; only repo makedepends (go, git).
+bluetuith 1a6ab61e1e14e72fd6b40858c0b144f87da435c6

@@ -13,7 +13,7 @@
 # gitignored (machine-derived output, like the wallpaper) — edit the
 # WALLPAPER to retheme, not colors.env. @DOTFILES@ is substituted to the
 # repo's absolute path by apply.sh (matugen has no notion of the repo
-# location, and its config can't read shell vars).
+# location, and its config cannot read shell vars) — like any *.tpl here.
 
 [config]
 reload_apps = true

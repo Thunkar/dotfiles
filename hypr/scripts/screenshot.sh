@@ -4,12 +4,11 @@
 #   screenshot.sh <region|screen|window> [annotate]
 #
 # Without `annotate`: grim writes a PNG to ~/Pictures/Screenshots/ and
-# also copies it to the Wayland clipboard (CopyQ picks it up
-# automatically and stores it in history with a thumbnail).
+# copies it to the Wayland clipboard (cliphist's watcher stores it too).
 #
-# With `annotate`: the captured PNG is piped into satty, an editor for
-# arrows / text / blur. On save, satty writes the annotated PNG to
-# the same screenshots dir and copies it to the clipboard via wl-copy.
+# With `annotate`: the captured PNG is piped into satty (arrows / text /
+# blur). On save, satty writes the annotated PNG to the same directory
+# and copies it to the clipboard via wl-copy.
 
 set -euo pipefail
 
@@ -20,24 +19,10 @@ dest_dir="$HOME/Pictures/Screenshots"
 mkdir -p "$dest_dir"
 out="$dest_dir/$(date +%Y-%m-%d_%H-%M-%S).png"
 
-geom=""
 case "$mode" in
-    region)
-        geom="$(slurp -d)"
-        ;;
-    screen)
-        geom="$(hyprctl monitors -j | python3 -c '
-import json, sys
-mon = next(m for m in json.load(sys.stdin) if m["focused"])
-print(f"{mon[\"x\"]},{mon[\"y\"]} {mon[\"width\"]}x{mon[\"height\"]}")')"
-        ;;
-    window)
-        geom="$(hyprctl activewindow -j | python3 -c '
-import json, sys
-w = json.load(sys.stdin)
-x, y = w["at"]; W, H = w["size"]
-print(f"{x},{y} {W}x{H}")')"
-        ;;
+    region) geom="$(slurp -d)" ;;
+    screen) geom="$(hyprctl -j monitors     | jq -r '.[] | select(.focused) | "\(.x),\(.y) \(.width)x\(.height)"')" ;;
+    window) geom="$(hyprctl -j activewindow | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')" ;;
     *)
         echo "usage: $0 <region|screen|window> [annotate]" >&2
         exit 2

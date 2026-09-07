@@ -1,0 +1,16 @@
+[Unit]
+Description=Wallpaper (swaybg)
+Documentation=https://github.com/swaywm/swaybg
+PartOf=graphical-session.target
+After=graphical-session.target
+Requisite=graphical-session.target
+ConditionEnvironment=WAYLAND_DISPLAY
+
+[Service]
+# default.png is produced by apply.sh (ensure_default_wallpaper); -m fill crops
+# the same image to every output.
+ExecStart=/usr/bin/swaybg -i %h/.config/hypr/wallpapers/default.png -m fill
+Restart=on-failure
+
+[Install]
+WantedBy=graphical-session.target

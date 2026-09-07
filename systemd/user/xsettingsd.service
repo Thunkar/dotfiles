@@ -1,0 +1,16 @@
+[Unit]
+Description=XSETTINGS daemon (theme/font settings for XWayland clients)
+Documentation=https://github.com/derat/xsettingsd
+PartOf=graphical-session.target
+After=graphical-session.target
+Requisite=graphical-session.target
+
+[Service]
+# The unit shipped by the package has no [Install] section and uses
+# ~/.xsettingsd; ours points at the deployed config and can be enabled.
+ExecStart=/usr/bin/xsettingsd -c %h/.config/xsettingsd/xsettingsd.conf
+ExecReload=kill -HUP $MAINPID
+Restart=on-failure
+
+[Install]
+WantedBy=graphical-session.target

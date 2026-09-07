@@ -29,6 +29,7 @@ hl.window_rule({
     name  = "kitty-dropdown",
     match = { class = "kitty_dropdown" },
     float     = true,
+    center    = false,   -- explicit: newer Hyprland would otherwise centre it and ignore `move`
     size      = "80% 40%",
     move      = "10% 5%",
     animation = "slide",

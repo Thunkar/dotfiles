@@ -60,12 +60,18 @@ manifest_entries() { grep -vE '^\s*(#|$)' "$1" | awk '{print $1}'; }
 #   - every KEY=value from theme/colors.env (matugen output; falls back to
 #     theme/colors.env.default on a fresh clone),
 #   - the built-ins HOME, DOTFILES and PRIMARY_OUTPUT (the `primary` output
-#     named in hypr/conf/monitors.lua, used by the SDDM theme).
+#     named in hypr/machine.lua, falling back to hypr/conf/monitors.lua; used
+#     by the SDDM theme).
 # The .tpl suffix is dropped in the destination. Literal overrides are fine
 # inline, e.g. rgba(@BASE_R@, @BASE_G@, @BASE_B@, 0.78).
 TOKENS=()
 primary_output() {
-    grep -oP '^\s*primary\s*=\s*"\K[^"]+' "$DOTFILES_DIR/hypr/conf/monitors.lua" 2>/dev/null | head -1 || true
+    local f
+    for f in "$DOTFILES_DIR/hypr/machine.lua" "$DOTFILES_DIR/hypr/conf/monitors.lua"; do
+        [[ -f "$f" ]] || continue
+        grep -oP 'primary\s*=\s*"\K[^"]+' "$f" 2>/dev/null | head -1 | grep . && return 0
+    done
+    return 0
 }
 load_tokens() {
     (( ${#TOKENS[@]} )) && return 0   # cached for this run
@@ -323,13 +329,6 @@ ensure_sddm_theme() {
 }
 
 # ── user-level ensure_* ─────────────────────────────────────────────
-ensure_git_merge_driver() {
-    # .gitattributes marks hypr/conf/monitors.lua merge=ours so `git merge
-    # upstream` keeps this machine's layout; the driver is per-clone config.
-    [[ -d "$DOTFILES_DIR/.git" ]] || return 0
-    git -C "$DOTFILES_DIR" config merge.ours.driver true 2>/dev/null || true
-}
-
 # Keep Firefox the default browser (Chromium grabs it on install).
 ensure_default_browser() {
     command -v xdg-settings >/dev/null 2>&1 || return 0
@@ -477,9 +476,9 @@ verify_hypr_config() {
     return 1
 }
 apply_hypr() {
-    # wallpapers/ (generated) and local.lua (per-machine, gitignored) are not
-    # in the repo and must survive --delete.
-    local ex=(wallpapers local.lua) legacy=0
+    # wallpapers/ is generated and must survive --delete. machine.lua and
+    # local.lua are gitignored but live in the repo dir, so they sync normally.
+    local ex=(wallpapers) legacy=0
     if hypr_running_legacy; then
         legacy=1
         ex+=(hyprland.conf conf.d theme/colors.conf)   # still in use by the running session
@@ -627,7 +626,6 @@ if (( DO_INSTALL )); then
     ensure_bluetooth_service
 fi
 
-ensure_git_merge_driver
 ensure_default_browser
 ensure_default_wallpaper
 

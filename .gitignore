@@ -7,5 +7,7 @@ wallpapers/*
 # matugen-generated palette (machine-derived, like the wallpaper)
 theme/colors.env
 
-# Optional per-machine Hyprland overrides, loaded last by hypr/hyprland.lua
+# Per-machine Hyprland files: monitor layout (read by conf/monitors.lua) and
+# optional overrides loaded last by hyprland.lua
+hypr/machine.lua
 hypr/local.lua

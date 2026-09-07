@@ -33,26 +33,25 @@ re-login; the next apply cleans them up.
 
 ## Per-machine setup (do this on each box)
 
-Two things are intentionally machine-specific and are not clobbered by
-`git merge upstream` (`.gitattributes merge=ours` / `.gitignore`):
+Two things are machine-specific and gitignored, so they never end up in a
+commit or an upstream PR:
 
-### 1. Monitors — `hypr/conf/monitors.lua`
+### 1. Monitors — `hypr/machine.lua`
 
-Run `hyprctl monitors` to see your outputs, then edit the file:
+Run `hyprctl monitors` to see your outputs, then create the file:
 
 ```lua
-local M = {
-    primary   = "DP-3",       -- odd workspaces + the SDDM login prompt
-    secondary = "HDMI-A-1",   -- even workspaces
-}
 hl.monitor({ output = "DP-3",     mode = "2560x1440@240", position = "2560x0", scale = 1 })
 hl.monitor({ output = "HDMI-A-1", mode = "2560x1440@60",  position = "0x0",    scale = 1 })
-return M
+return { primary = "DP-3", secondary = "HDMI-A-1" }
 ```
 
-Single monitor? Set both names to it (or drop `secondary`). `primary` also
-tells SDDM which screen gets the password prompt — the other screens only
-show the blurred wallpaper (the theme's `Xsetup` marks it X11-primary).
+`primary` gets the odd workspaces and the SDDM login prompt, `secondary`
+the even ones. Single monitor? Skip the file entirely: the catch-all in
+`hypr/conf/monitors.lua` gives every output its preferred mode, and the
+workspaces simply follow it. `primary` also tells SDDM which screen shows
+the password prompt — the other screens only show the blurred wallpaper
+(the theme's `Xsetup` marks it X11-primary).
 
 Anything else machine-specific goes in `hypr/local.lua` (gitignored, loaded
 last, may override anything).
@@ -107,7 +106,7 @@ wallpapers/<your image>
 
 ```
 hypr/hyprland.lua        entry point — requires the modules below in order
-hypr/conf/monitors.lua   per-machine outputs, primary/secondary   (merge=ours)
+hypr/conf/monitors.lua   catch-all output + loads the per-machine hypr/machine.lua
 hypr/conf/workspaces.lua odd → primary, even → secondary, all persistent
 hypr/conf/look.lua       gaps, borders, blur, shadows, animations, layouts, misc
 hypr/conf/input.lua      keyboard layout, mouse, gestures
@@ -115,6 +114,7 @@ hypr/conf/windowrules.lua
 hypr/conf/keybinds.lua   binds; the "category | text" argument feeds the cheatsheet
 hypr/conf/autostart.lua  compositor-side startup only (daemons are systemd units)
 hypr/theme/colors.lua    GENERATED palette table
+hypr/machine.lua         gitignored: your outputs + primary/secondary
 hypr/local.lua           optional, gitignored, loaded last
 ```
 

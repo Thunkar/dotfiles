@@ -4,7 +4,8 @@
 -- calling the `hl` API; `require` resolves relative to this directory, so
 -- "conf.look" → conf/look.lua. Shared data flows through `require` too:
 --   theme.colors   palette table rendered from theme/colors.env by apply.sh
---   conf.monitors  per-machine outputs + which one is primary/secondary
+--   conf.monitors  outputs + which one is primary/secondary (per-machine
+--                  values from gitignored hypr/machine.lua)
 --
 -- No environment variables are set here on purpose: the session is launched by
 -- uwsm, so Hyprland and everything it spawns inherit ~/.config/environment.d/.
@@ -14,7 +15,7 @@
 -- Reload the live session:      hyprctl reload
 -- API reference shipped with Hyprland: /usr/share/hypr/stubs/hl.meta.lua
 
-require("conf.monitors")      -- per-machine: outputs, primary/secondary
+require("conf.monitors")      -- outputs, primary/secondary (reads machine.lua)
 require("conf.workspaces")    -- odd → primary, even → secondary
 require("conf.look")          -- borders, gaps, blur, animations, layouts, misc
 require("conf.input")         -- keyboard, mouse, gestures

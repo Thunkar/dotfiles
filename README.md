@@ -159,6 +159,21 @@ when no repo provides it.
 - Installing is a full `pacman -Syu`, never `-Sy` + `-S`: refreshing the
   database and then installing without upgrading leads to partial upgrades.
 
+## Printing and scanning
+
+Driverless only: modern network printers speak IPP Everywhere / AirPrint, so
+`cups` (enabled by `apply.sh`) discovers them over mDNS and shows a temporary
+queue in every print dialog with no vendor driver installed. To pin a
+permanent default queue for a printer that is on right now:
+
+```sh
+sudo lpadmin -p brother -E -m everywhere -v "$(ippfind -T 5 | head -1)"
+sudo lpadmin -d brother
+```
+
+`system-config-printer` is the GTK GUI for queues and test pages. Scanning
+is driverless too: `simple-scan` with the `sane-airscan` backend.
+
 ## Components
 
 | Area            | Tool / file                                                    |
@@ -176,3 +191,4 @@ when no repo provides it.
 | File manager    | Nautilus (`SUPER+E`)                                           |
 | Screenshots     | grim + slurp + satty (`Print`, `ALT+SHIFT+4/5`)                |
 | Cheatsheet      | `SUPER+F11`, generated from bind descriptions                  |
+| Printing        | CUPS driverless (IPP Everywhere), `system-config-printer`, `simple-scan` |

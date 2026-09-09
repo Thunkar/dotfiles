@@ -80,6 +80,17 @@ xorg-xrandr                # SDDM Xsetup: marks the primary output for the login
 base-devel                 # makepkg, for the pinned AUR builds in aur.txt
 git
 
+# ── Printing / scanning (driverless) ───────────────────────────────
+# Modern network printers/MFPs (e.g. the Brother DCP-L3560CDW) speak IPP
+# Everywhere / AirPrint and eSCL, so no vendor driver — and no AUR package —
+# is needed. CUPS discovers them over mDNS (avahi + nss-mdns are pulled in)
+# and offers a temporary queue in every print dialog; apply.sh's
+# ensure_printing enables the CUPS socket. Deliberately no cups-browsed.
+cups                       # print server (cups.socket, socket-activated)
+system-config-printer      # GTK printer/queue GUI, test pages
+sane-airscan               # driverless (eSCL/WSD) scanner backend
+simple-scan                # GTK scanner app
+
 # ── Flatpak apps (managed separately) ─────────────────────────────
 # Apps shipped as Flatpak live in flatpak.txt (one app ID per line);
 # apply.sh installs/updates them user-scoped.

@@ -150,7 +150,7 @@ unit_ctl() {
 # prompt. Prime the timestamp once, keep it alive until the script exits.
 SUDO_KEEPER_PID=""
 prime_sudo() {
-    step "this run needs sudo (pacman/makepkg/chsh/sddm) — authenticate once"
+    step "this run needs sudo (pacman/makepkg/chsh/sddm/cups) — authenticate once"
     sudo -v
     ( while true; do sudo -n true 2>/dev/null || exit; sleep 60; done ) &
     SUDO_KEEPER_PID=$!
@@ -285,6 +285,19 @@ ensure_bluetooth_service() {
     # waybar's bluetooth module talks to bluez over D-Bus; bluetoothd must run.
     if systemctl list-unit-files bluetooth.service >/dev/null 2>&1; then
         sudo systemctl enable --now bluetooth.service >/dev/null 2>&1 || true
+    fi
+}
+
+ensure_printing() {
+    # Driverless printing: CUPS finds IPP Everywhere / AirPrint printers over
+    # mDNS (avahi + nss-mdns) and exposes them as temporary queues in print
+    # dialogs, so enabling the socket is all a setup needs. A permanent
+    # default queue is a one-off per printer (see README "Printing").
+    systemctl list-unit-files cups.socket >/dev/null 2>&1 || return 0
+    if sudo systemctl enable --now cups.socket >/dev/null 2>&1; then
+        ok "printing: cups.socket enabled (driverless printers appear automatically)"
+    else
+        warn "printing: could not enable cups.socket"
     fi
 }
 
@@ -624,6 +637,7 @@ if (( DO_INSTALL )); then
     install_flatpaks
     ensure_zsh_login_shell
     ensure_bluetooth_service
+    ensure_printing
 fi
 
 ensure_default_browser

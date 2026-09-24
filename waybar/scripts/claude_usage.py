@@ -26,16 +26,23 @@ TIMEOUT_S = 8
 
 LOCK_FILE = CACHE_FILE.with_suffix(".lock")
 
-# The usage endpoint has a tight (undocumented) rate limit, and waybar
-# runs one copy of this script per monitor every 30s. So: serve the
-# cache for FRESH_S (the reset countdown is recomputed locally, so the
-# bar stays live), serialize fetches with a lock so only one bar
-# instance calls the API, and back off exponentially after a 429 —
-# retrying on every poll keeps the limiter window saturated forever.
-FRESH_S       = 600     # one API call per 10 min at most
-STALE_OK_S    = 3600    # show cached values up to 1h old during outages
-BACKOFF_MIN_S = 120
-BACKOFF_MAX_S = 1800
+# The usage endpoint has a tight, undocumented rate limit, and waybar
+# runs one copy of this script per monitor every 30s. Fetches are
+# serialized with a lock so only one bar instance calls the API, and the
+# refresh interval adapts to find the limit: each success shortens it by
+# STEP_S, a 429 marks that interval as too fast (the floor, plus MARGIN)
+# and backs off exponentially. It settles just above the real limit and
+# the floor slowly decays so it re-probes if the limit is relaxed.
+# Retrying on every poll after a 429 keeps the limiter saturated forever.
+INTERVAL_MIN_S = 30     # waybar's own poll interval; can't go lower
+INTERVAL_START = 60
+STEP_S         = 5
+MARGIN         = 1.25   # stay this far above an interval that got a 429
+FLOOR_DECAY_S  = 1      # floor drops by this much per success
+FLOOR_MAX_S    = 600
+STALE_OK_S     = 3600   # show cached values up to 1h old during outages
+BACKOFF_MIN_S  = 60
+BACKOFF_MAX_S  = 900
 
 
 def emit(text, tooltip, css_class):
@@ -147,7 +154,9 @@ def run():
     now_s = time.time()
 
     # Serve fresh cache without hitting the API at all.
-    if cached and (now_s - cache_at) < FRESH_S:
+    interval = state.get("interval", INTERVAL_START)
+    floor = state.get("floor", INTERVAL_MIN_S)
+    if cached and (now_s - cache_at) < interval:
         render(cached, now_s - cache_at)
         return
 
@@ -158,13 +167,20 @@ def run():
         err_msg = None
         try:
             data = fetch_usage()
-            write_cache({"at": now_s, "data": data})
+            floor = max(floor - FLOOR_DECAY_S, INTERVAL_MIN_S)
+            write_cache({"at": now_s, "data": data, "floor": floor,
+                         "interval": max(interval - STEP_S, floor)})
             render(data, 0)
             return
         except FileNotFoundError:
             emit("󰚩 ?", "No Claude credentials at ~/.claude/.credentials.json", "error")
             return
         except HTTPError as e:
+            if e.code == 429 and not state.get("backoff"):
+                # First 429 since a success: the current interval is too
+                # fast. Retries during backoff don't count.
+                state["floor"] = min(max(floor, interval * MARGIN), FLOOR_MAX_S)
+                state["interval"] = state["floor"]
             if e.code == 401:
                 err_msg = "auth expired — run `claude` to refresh"
             elif e.code == 429:

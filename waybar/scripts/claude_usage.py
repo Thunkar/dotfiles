@@ -11,6 +11,7 @@ CLI hasn't refreshed it yet, the widget shows "auth?" until the next
 `claude` invocation refreshes the credential file.
 """
 
+import fcntl
 import json
 import time
 from datetime import datetime, timezone
@@ -23,13 +24,18 @@ USAGE_URL = "https://api.anthropic.com/api/oauth/usage"
 CACHE_FILE = Path("/tmp") / f"claude-usage-{Path.home().name}.json"
 TIMEOUT_S = 8
 
-# Cache successful responses so waybar's 30s polling — and any other
-# concurrent caller — doesn't slam the endpoint. If the cache is fresh
-# we serve it without an API call. If the API fails (rate limit, brief
-# network blip), we serve the cached value up to STALE_OK_S old and
-# label it as a stale read rather than an error.
-FRESH_S    = 25     # under waybar's 30s interval, so each poll triggers ≤1 call
-STALE_OK_S = 600    # tolerate cached values up to 10 minutes during outages
+LOCK_FILE = CACHE_FILE.with_suffix(".lock")
+
+# The usage endpoint has a tight (undocumented) rate limit, and waybar
+# runs one copy of this script per monitor every 30s. So: serve the
+# cache for FRESH_S (the reset countdown is recomputed locally, so the
+# bar stays live), serialize fetches with a lock so only one bar
+# instance calls the API, and back off exponentially after a 429 —
+# retrying on every poll keeps the limiter window saturated forever.
+FRESH_S       = 600     # one API call per 10 min at most
+STALE_OK_S    = 3600    # show cached values up to 1h old during outages
+BACKOFF_MIN_S = 120
+BACKOFF_MAX_S = 1800
 
 
 def emit(text, tooltip, css_class):
@@ -38,15 +44,14 @@ def emit(text, tooltip, css_class):
 
 def read_cache():
     try:
-        raw = json.loads(CACHE_FILE.read_text())
-        return raw.get("at", 0), raw.get("data") or {}
+        return json.loads(CACHE_FILE.read_text())
     except (FileNotFoundError, OSError, ValueError):
-        return 0, None
+        return {}
 
 
-def write_cache(data):
+def write_cache(state):
     try:
-        CACHE_FILE.write_text(json.dumps({"at": time.time(), "data": data}))
+        CACHE_FILE.write_text(json.dumps(state))
     except OSError:
         pass
 
@@ -128,7 +133,17 @@ def render(data, age_s, was_error=None):
 
 
 def main():
-    cache_at, cached = read_cache()
+    # Hold the lock for the whole run so concurrent bar instances wait
+    # for the first one's result instead of all hitting the API.
+    with open(LOCK_FILE, "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        run()
+
+
+def run():
+    state = read_cache()
+    cache_at = state.get("at", 0)
+    cached = state.get("data")
     now_s = time.time()
 
     # Serve fresh cache without hitting the API at all.
@@ -136,25 +151,40 @@ def main():
         render(cached, now_s - cache_at)
         return
 
-    try:
-        data = fetch_usage()
-        write_cache(data)
-        render(data, 0)
-        return
-    except FileNotFoundError:
-        emit("󰚩 ?", "No Claude credentials at ~/.claude/.credentials.json", "error")
-        return
-    except HTTPError as e:
-        if e.code == 401:
-            err_msg = "auth expired — run `claude` to refresh"
-        elif e.code == 429:
-            err_msg = "rate-limited (too many calls)"
-        else:
-            err_msg = f"HTTP {e.code}"
-    except (URLError, TimeoutError, OSError) as e:
-        err_msg = f"network: {e}"
-    except (KeyError, ValueError) as e:
-        err_msg = f"bad payload: {e}"
+    # Still backing off from an earlier failure: don't call the API.
+    if now_s < state.get("retry_at", 0):
+        err_msg = state.get("last_error", "backing off")
+    else:
+        err_msg = None
+        try:
+            data = fetch_usage()
+            write_cache({"at": now_s, "data": data})
+            render(data, 0)
+            return
+        except FileNotFoundError:
+            emit("󰚩 ?", "No Claude credentials at ~/.claude/.credentials.json", "error")
+            return
+        except HTTPError as e:
+            if e.code == 401:
+                err_msg = "auth expired — run `claude` to refresh"
+            elif e.code == 429:
+                err_msg = "rate-limited"
+            else:
+                err_msg = f"HTTP {e.code}"
+            try:
+                retry_after = int(e.headers.get("Retry-After") or 0)
+            except ValueError:
+                retry_after = 0
+        except (URLError, TimeoutError, OSError) as e:
+            err_msg, retry_after = f"network: {e}", 0
+        except (KeyError, ValueError) as e:
+            err_msg, retry_after = f"bad payload: {e}", 0
+
+        # Exponential backoff, honoring Retry-After when it's meaningful.
+        backoff = min(max(state.get("backoff", 0) * 2, BACKOFF_MIN_S), BACKOFF_MAX_S)
+        state.update(backoff=backoff, last_error=err_msg,
+                     retry_at=now_s + max(backoff, retry_after))
+        write_cache(state)
 
     # API call failed. If we have a not-too-stale cached value, render
     # that with a warning marker rather than flashing red on the bar.

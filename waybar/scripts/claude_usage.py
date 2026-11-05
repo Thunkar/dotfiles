@@ -108,7 +108,7 @@ def render(data, age_s, was_error=None):
     reset_5h = fmt_reset(five.get("resets_at"),  now)
     reset_7d = fmt_reset(seven.get("resets_at"), now)
 
-    text = f"󰚩 {pct_5h:.0f}% · {reset_5h}"
+    text = f"󰚩 {pct_5h:.0f}% · {reset_5h} · 7d {pct_7d:.0f}%"
     if was_error:
         text += " ⚠"
 
@@ -136,7 +136,8 @@ def render(data, age_s, was_error=None):
     if age_s is not None:
         lines.append(f"  fetched {int(age_s)}s ago")
 
-    emit(text, "\n".join(lines), classify(pct_5h))
+    # Colour by whichever limit is closer to blocking you.
+    emit(text, "\n".join(lines), classify(max(pct_5h, pct_7d)))
 
 
 def main():
